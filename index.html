@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>思考パターン分析テスト</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    /* ===== カスタムスタイル ===== */
+    body {
+      background-color: #f0f4f8;
+      font-family: 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', 'Meiryo', sans-serif;
+    }
+
+    /* オプションボタン */
+    .option-btn {
+      transition: all 0.2s ease;
+      cursor: pointer;
+    }
+    .option-btn:hover {
+      background-color: #eef2ff;
+      border-color: #6366f1;
+    }
+    .option-btn.selected {
+      background-color: #eef2ff;
+      border-color: #4f46e5;
+      color: #4f46e5;
+    }
+    .option-btn.selected .option-number {
+      background-color: #4f46e5;
+      color: white;
+    }
+
+    /* プログレスバー */
+    .progress-bar-fill {
+      transition: width 0.4s ease;
+    }
+
+    /* スコアバー */
+    .score-bar {
+      height: 8px;
+      background-color: #e5e7eb;
+      border-radius: 9999px;
+      overflow: hidden;
+    }
+    .score-bar-fill {
+      height: 100%;
+      border-radius: 9999px;
+      transition: width 1s ease;
+    }
+
+    /* 質問トランジション */
+    .question-fade {
+      animation: fadeIn 0.3s ease;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* 印刷スタイル */
+    @media print {
+      body { background-color: white !important; }
+      .no-print { display: none !important; }
+      #test-section { display: none !important; }
+      #result-section { display: block !important; }
+      .print-card {
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+      .chart-area {
+        max-width: 400px;
+        margin: 0 auto;
+      }
+      .print-header {
+        text-align: center;
+        margin-bottom: 1rem;
+      }
+    }
+
+    /* ページ全体が結果表示時にスムーズにスクロール */
+    html { scroll-behavior: smooth; }
+
+    /* アドバイスエリア */
+    .advice-box {
+      border-left: 3px solid;
+      padding: 0.5rem 0.75rem;
+      border-radius: 0 4px 4px 0;
+      font-size: 0.85rem;
+      line-height: 1.6;
+    }
+    .advice-low  { border-color: #22c55e; background-color: #f0fdf4; color: #166534; }
+    .advice-mid  { border-color: #eab308; background-color: #fefce8; color: #854d0e; }
+    .advice-high { border-color: #ef4444; background-color: #fef2f2; color: #991b1b; }
+
+    /* スコアバッジ */
+    .score-badge {
+      display: inline-block;
+      padding: 2px 10px;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .badge-low  { background: #dcfce7; color: #166534; }
+    .badge-mid  { background: #fef9c3; color: #854d0e; }
+    .badge-high { background: #fee2e2; color: #991b1b; }
+  </style>
+</head>
+<body class="min-h-screen">
+
+<!-- ===== テストセクション ===== -->
+<section id="test-section" class="max-w-2xl mx-auto px-4 py-10">
+
+  <!-- ヘッダー -->
+  <div class="text-center mb-8">
+    <h1 class="text-2xl font-bold text-indigo-800 mb-1">思考パターン分析テスト</h1>
+    <p class="text-sm text-gray-500">あなたの思考傾向を15の視点から分析します。各質問に正直に答えてください。</p>
+  </div>
+
+  <!-- プログレスバー -->
+  <div class="mb-6">
+    <div class="flex justify-between text-xs text-gray-500 mb-1">
+      <span id="q-counter">質問 1 / 45</span>
+      <span id="q-percent">2%</span>
+    </div>
+    <div class="h-2 bg-gray-200 rounded-full overflow-hidden">
+      <div id="progress-bar" class="progress-bar-fill h-full bg-indigo-500 rounded-full" style="width:2%"></div>
+    </div>
+  </div>
+
+  <!-- 質問カード -->
+  <div class="bg-white rounded-2xl shadow-md p-6 mb-6">
+    <p id="question-text" class="text-base font-medium text-gray-800 mb-5 question-fade leading-relaxed"></p>
+    <div id="options-container" class="space-y-2"></div>
+  </div>
+
+  <!-- ナビゲーション -->
+  <div class="flex gap-3">
+    <button id="prev-btn" class="no-print flex-1 py-2.5 rounded-xl border border-indigo-300 text-indigo-600 font-medium hover:bg-indigo-50 transition disabled:opacity-40 disabled:cursor-not-allowed" disabled>前へ</button>
+    <button id="restart-test-btn" class="no-print py-2.5 px-4 rounded-xl border border-gray-300 text-gray-500 font-medium hover:bg-gray-50 transition text-sm">やり直し</button>
+  </div>
+</section>
+
+<!-- ===== 結果セクション ===== -->
+<section id="result-section" class="hidden max-w-3xl mx-auto px-4 py-10">
+
+  <!-- 印刷ヘッダー（印刷時のみ表示） -->
+  <div class="print-header hidden" id="print-title">
+    <h1 style="font-size:1.4rem;font-weight:bold;color:#3730a3;">思考パターン分析テスト 結果レポート</h1>
+    <p style="font-size:0.8rem;color:#6b7280;">作成日: <span id="result-date"></span></p>
+    <hr style="margin:0.5rem 0;" />
+  </div>
+
+  <!-- 結果ヘッダー -->
+  <div class="text-center mb-8 no-print">
+    <h2 class="text-2xl font-bold text-indigo-800 mb-1">分析結果</h2>
+    <p class="text-sm text-gray-500">15カテゴリの思考パターンをスコアで表示しています</p>
+  </div>
+
+  <!-- 総合コメント -->
+  <div id="summary-comment" class="bg-indigo-50 border border-indigo-200 rounded-2xl p-5 mb-8 print-card">
+    <h3 class="font-bold text-indigo-800 mb-2 text-base">あなたの思考傾向の特徴</h3>
+    <div id="summary-text" class="text-sm text-gray-700 leading-relaxed space-y-1"></div>
+  </div>
+
+  <!-- レーダーチャート -->
+  <div class="bg-white rounded-2xl shadow-md p-5 mb-8 print-card chart-area">
+    <h3 class="font-bold text-gray-700 mb-4 text-center">思考パターン レーダーチャート</h3>
+    <div style="max-width:480px;margin:0 auto;">
+      <canvas id="radar-chart"></canvas>
+    </div>
+  </div>
+
+  <!-- カテゴリ別詳細 -->
+  <div id="results-by-category"></div>
+
+  <!-- アクションボタン -->
+  <div class="no-print flex flex-wrap gap-3 mt-8 justify-center">
+    <button id="print-btn" class="py-2.5 px-6 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-medium transition flex items-center gap-2">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
+      結果をPDFで保存
+    </button>
+    <button id="restart-btn" class="py-2.5 px-6 bg-white border border-indigo-300 text-indigo-600 hover:bg-indigo-50 rounded-xl font-medium transition">
+      もう一度テストする
+    </button>
+  </div>
+</section>
+
+<script>
+// ===========================
+// データ定義
+// ===========================
+
+const thinkingPatterns = [
+  { id: 'blackWhite',         name: '白黒思考',       category: '認知の歪み系',     color: '#ef4444', description: '物事を極端な二択で捉える思考パターン' },
+  { id: 'overgeneralization', name: '過度の一般化',   category: '認知の歪み系',     color: '#f87171', description: '一つの出来事から全てを一般化して考える思考パターン' },
+  { id: 'mindReading',        name: '読心術的思考',   category: '認知の歪み系',     color: '#fca5a5', description: '他者の考えを根拠なく推測する思考パターン' },
+  { id: 'anger',              name: 'アンガー思考',   category: '情動コントロール系', color: '#f97316', description: '怒りの感情が思考を支配するパターン' },
+  { id: 'victimMentality',    name: '被害者意識思考', category: '情動コントロール系', color: '#fb923c', description: '自分を被害者として位置づける思考パターン' },
+  { id: 'mounting',           name: 'マウンティング思考', category: '対人関係系',  color: '#eab308', description: '自分の優位性を示そうとする思考パターン' },
+  { id: 'avoidance',          name: '回避型思考',     category: '対人関係系',      color: '#facc15', description: '問題や対立を避けようとする思考パターン' },
+  { id: 'cognitiveBias',      name: '認知バイアス思考', category: '対人関係系',    color: '#fde047', description: '先入観や偏見に基づいて判断する思考パターン' },
+  { id: 'blaming',            name: '他責思考',       category: '責任認知系',      color: '#16a34a', description: '問題の原因を他人や環境に求める思考パターン' },
+  { id: 'selfBlaming',        name: '自責思考',       category: '責任認知系',      color: '#4ade80', description: '問題の原因を過度に自分に求める思考パターン' },
+  { id: 'discrimination',     name: '差別性',         category: '社会的背景系',    color: '#2563eb', description: '特定の属性に基づいて人を区別する思考パターン' },
+  { id: 'dependency',         name: '依存思考',       category: '社会的背景系',    color: '#60a5fa', description: '他者や物事に過度に依存する思考パターン' },
+  { id: 'resistanceToChange', name: '変化拒否思考',   category: '成長阻害系',      color: '#9333ea', description: '変化や新しいことを避ける思考パターン' },
+  { id: 'comparison',         name: '他人比較思考',   category: '成長阻害系',      color: '#a855f7', description: '自分を常に他者と比較する思考パターン' },
+  { id: 'fearOfSuccess',      name: '成功恐怖思考',   category: '成長阻害系',      color: '#c084fc', description: '成功することへの不安や恐れを持つ思考パターン' }
+];
+
+const questions = [
+  { id: 1,  text: '物事は成功か失敗かのどちらかだと考えることが多い',                         patternId: 'blackWhite' },
+  { id: 2,  text: '人は良い人か悪い人かはっきり分かれると思う',                               patternId: 'blackWhite' },
+  { id: 3,  text: '中間的な結果や妥協点を見つけるのが苦手だ',                                 patternId: 'blackWhite' },
+  { id: 4,  text: '一度失敗すると「自分はいつも失敗する」と考えてしまう',                     patternId: 'overgeneralization' },
+  { id: 5,  text: '一人の人の行動から、その集団全体の特性を判断することがある',               patternId: 'overgeneralization' },
+  { id: 6,  text: '「いつも」「絶対に」「決して〜ない」などの言葉をよく使う',                 patternId: 'overgeneralization' },
+  { id: 7,  text: '相手が何も言わなくても、その人が自分をどう思っているか分かる気がする',     patternId: 'mindReading' },
+  { id: 8,  text: '人が自分を見るとネガティブに評価していると感じることが多い',               patternId: 'mindReading' },
+  { id: 9,  text: '相手の表情や態度から、確証なく相手の考えを決めつけることがある',           patternId: 'mindReading' },
+  { id: 10, text: '些細なことで怒りを感じることが多い',                                       patternId: 'anger' },
+  { id: 11, text: '怒りを感じると冷静な判断ができなくなる',                                   patternId: 'anger' },
+  { id: 12, text: '怒りの感情が他の感情よりも強く出やすい',                                   patternId: 'anger' },
+  { id: 13, text: '自分だけが不当な扱いを受けていると感じることが多い',                       patternId: 'victimMentality' },
+  { id: 14, text: '周りの人は自分よりも恵まれていると思う',                                   patternId: 'victimMentality' },
+  { id: 15, text: '自分の不運や失敗は外部要因のせいだと考えがちだ',                           patternId: 'victimMentality' },
+  { id: 16, text: '会話の中で自分の知識や経験を誇示したくなる',                               patternId: 'mounting' },
+  { id: 17, text: '他人の成功を聞くと、自分の成功体験を話したくなる',                         patternId: 'mounting' },
+  { id: 18, text: '議論では相手より優位に立ちたいと強く思う',                                 patternId: 'mounting' },
+  { id: 19, text: '対立や議論を避けるために自分の意見を言わないことがある',                   patternId: 'avoidance' },
+  { id: 20, text: '困難な状況に直面すると、その場から逃げ出したくなる',                       patternId: 'avoidance' },
+  { id: 21, text: '重要な決断を先延ばしにすることが多い',                                     patternId: 'avoidance' },
+  { id: 22, text: '最初の印象で人を判断することが多い',                                       patternId: 'cognitiveBias' },
+  { id: 23, text: '自分の考えを支持する情報ばかりに注目する',                                 patternId: 'cognitiveBias' },
+  { id: 24, text: '一度形成した意見は、反証があっても変えにくい',                             patternId: 'cognitiveBias' },
+  { id: 25, text: '自分の問題や失敗の原因は他人や環境にあると考えがちだ',                     patternId: 'blaming' },
+  { id: 26, text: '「あの人がこうしてくれなかったから」と考えることが多い',                   patternId: 'blaming' },
+  { id: 27, text: '自分の感情や反応の責任を他者に求める',                                     patternId: 'blaming' },
+  { id: 28, text: '何か問題が起きると、まず自分を責めてしまう',                               patternId: 'selfBlaming' },
+  { id: 29, text: '他人の不幸や失敗も、どこか自分のせいのように感じる',                       patternId: 'selfBlaming' },
+  { id: 30, text: '自分の欠点や失敗を過度に気にする',                                         patternId: 'selfBlaming' },
+  { id: 31, text: '特定の集団に対して、無意識に偏見を持っていることがある',                   patternId: 'discrimination' },
+  { id: 32, text: '自分と異なる背景を持つ人々を理解するのが難しいと感じる',                   patternId: 'discrimination' },
+  { id: 33, text: '社会的なステレオタイプに基づいて人を判断することがある',                   patternId: 'discrimination' },
+  { id: 34, text: '重要な決断を一人でするのが怖い',                                           patternId: 'dependency' },
+  { id: 35, text: '他者の承認や同意がないと不安になる',                                       patternId: 'dependency' },
+  { id: 36, text: '一人でいることに強い不安を感じる',                                         patternId: 'dependency' },
+  { id: 37, text: '新しい状況や環境の変化に適応するのが苦手だ',                               patternId: 'resistanceToChange' },
+  { id: 38, text: '慣れた方法や習慣を変えることに抵抗を感じる',                               patternId: 'resistanceToChange' },
+  { id: 39, text: '不確実な状況よりも、結果が予測できる状況を好む',                           patternId: 'resistanceToChange' },
+  { id: 40, text: '自分の価値を他者と比較して判断することが多い',                             patternId: 'comparison' },
+  { id: 41, text: 'SNSで他人の投稿を見ると、自分の生活と比べてしまう',                        patternId: 'comparison' },
+  { id: 42, text: '他人の成功を聞くと、自分が劣っているように感じる',                         patternId: 'comparison' },
+  { id: 43, text: '成功すると、それを維持できないのではと不安になる',                         patternId: 'fearOfSuccess' },
+  { id: 44, text: '目標達成が近づくと、なぜか自己妨害的な行動をとってしまう',                 patternId: 'fearOfSuccess' },
+  { id: 45, text: '成功すると周囲からの期待が高まり、それが怖いと感じる',                     patternId: 'fearOfSuccess' }
+];
+
+// ===========================
+// アドバイスデータ（3段階 × 15カテゴリ）
+// ===========================
+const advice = {
+  blackWhite: {
+    low:  'バランスよく物事を捉えられています。多面的な視点を持ち続けることで、柔軟な判断力がさらに磨かれます。',
+    mid:  'ときどき「白か黒か」で判断してしまうことがあるようです。「どちらでもある」「どちらとも言えない」という言葉を意識的に使う練習が効果的です。',
+    high: '物事を二択で捉えがちな傾向があります。「グレーゾーン」を意識する練習をしてみましょう。「〜かもしれない」「〜という側面もある」という表現を使い、中間の可能性を探す習慣が助けになります。また、「完璧でなくても十分」という基準を持つと楽になることがあります。'
+  },
+  overgeneralization: {
+    low:  '一つの出来事から過度に一般化せず、柔軟に状況を判断できています。この視点は人間関係をスムーズにする大きな強みです。',
+    mid:  'ときどき「いつもこうだ」と考えてしまうことがあるかもしれません。「今回は」「この時だけ」という言葉に言い換えると、一つの出来事を正確に捉えやすくなります。',
+    high: '一つの経験から「いつも〜だ」「全部〜だ」と結論づけやすい傾向があります。出来事を記録して振り返ると、「実は例外もある」と気づけることが多いです。「今回は」という言葉に意識的に置き換える練習がおすすめです。認知行動療法のコラム法も参考になります。'
+  },
+  mindReading: {
+    low:  '他者の考えを決めつけず、確認しようとする姿勢が見られます。コミュニケーションの信頼感につながる大切な特性です。',
+    mid:  '相手の気持ちを推測しすぎてしまうことが少しあるようです。「本当にそう思っているかどうか、聞いてみる」という選択肢を持つと、思い込みが減ります。',
+    high: '根拠なく相手の考えを確信してしまいやすい傾向があります。「相手はこう思っているはず」と感じたとき、「私はこう思った。実際はどうですか?」と確認する習慣をつけましょう。確認することで誤解が解けるケースがほとんどです。相手も正直な気持ちを話してもらえると喜ぶことが多いです。'
+  },
+  anger: {
+    low:  '感情のコントロールが安定しています。落ち着いた状態を保てることは、良好な人間関係の土台になります。',
+    mid:  '怒りを感じることがときどきあるようです。怒りを感じたとき、「なぜ怒っているか」を一言で言語化するだけで感情が落ち着くことがあります。',
+    high: '怒りの感情が強く出やすい傾向があります。「6秒ルール」（怒りのピークは6秒で過ぎる）を活用し、感じたらその場を離れるか、深呼吸を6回してみてください。怒りの下には「悲しみ」「不安」「疲れ」が隠れていることも多いです。安心できる環境で感情を整理することが大切です。支援者に相談することも有効です。'
+  },
+  victimMentality: {
+    low:  '公平な視点で状況を捉えられています。自分の行動と外部の影響を区別できることは、自己成長の力になります。',
+    mid:  '不公平に感じる状況があるようです。「自分にできることは何か」を小さくても一つ考えるだけで、無力感が少し和らぐことがあります。',
+    high: '自分が不当な扱いを受けていると感じることが多い傾向があります。「自分の影響できる範囲」と「できない範囲」を分けて考えることが助けになります。信頼できる人に話を聞いてもらい、客観的な視点をもらうことも大切です。自分の強みや、うまくいっていることに目を向ける時間を意識的に作りましょう。'
+  },
+  mounting: {
+    low:  '相手の話を尊重し、対話を大切にできています。謙虚さと自信のバランスが取れている特性です。',
+    mid:  '自分の経験や知識をシェアしたくなることがあるようです。「相手から学ぶ」という姿勢を意識すると、対話がより豊かになります。',
+    high: '自分の優位性を示したくなる傾向があります。相手に「あなたはどう思いますか?」と質問し、話を聞く時間を意識的に増やしてみましょう。相手の話に興味を持つことで、自分への信頼も自然と高まります。マウンティングは「認められたい」という気持ちの表れであることが多く、その気持ち自体は自然なことです。'
+  },
+  avoidance: {
+    low:  '困難な状況にも向き合える姿勢があります。直面する力は、長期的な自己成長と信頼関係の構築につながります。',
+    mid:  '難しい状況を避けたくなることがあるようです。「避けること」と「今は取り組まない選択をすること」を区別してみてください。意識的な選択は有効な対処法です。',
+    high: '問題や対立を避けがちな傾向があります。「避けること」と「今は選ばないこと」の違いを意識しましょう。小さな一歩から始めることが大切です。「この問題の、一番簡単に解決できる部分は何か?」と考えると行動しやすくなります。支援者や信頼できる人に同席してもらうことも助けになります。'
+  },
+  cognitiveBias: {
+    low:  '先入観に縛られず、情報をフラットに捉えようとする姿勢が見られます。批判的思考力は、判断の質を高める重要な力です。',
+    mid:  '最初の印象や自分の考えに引っ張られることがあるようです。「反対意見を一つ探してみる」という習慣をつけると、視野が広がります。',
+    high: '先入観や確証バイアスが働きやすい傾向があります。「自分の意見の反証を一つ探す」という練習が効果的です。新しい情報を受け取るとき、「これは本当か?」と一度問いかける習慣をつけましょう。多様な背景を持つ人と交流することも、認知の柔軟性を高めます。'
+  },
+  blaming: {
+    low:  '自分の行動に責任を持てています。自己責任感は、信頼関係と自己効力感を育てる強みです。',
+    mid:  '外部に原因を求めることがあるようです。「自分が変えられることは何か?」を一つ考えるだけで、行動のきっかけが生まれます。',
+    high: '問題の原因を他者や環境に帰しやすい傾向があります。「自分がコントロールできること」と「できないこと」を書き出してみましょう。他者を責める気持ちの裏には、傷ついた経験や不公平感があることが多いです。その気持ちを大切にしながら、「自分にできる小さな行動」を一つ見つけることが前進につながります。'
+  },
+  selfBlaming: {
+    low:  '自分に対して適切な評価ができています。自分を責めすぎない姿勢は、精神的な健康の土台です。',
+    mid:  '自分を責めてしまうことがあるようです。「もし親友が同じ状況だったら、なんと声をかける?」と自分に問いかけてみてください。',
+    high: '何かあると自分を責めやすい傾向があります。「事実」と「解釈（自分の評価）」を分けて考える練習が効果的です。「○○が起きた（事実）」と「だから自分はダメだ（解釈）」は別のことです。親友に話すように自分に優しく語りかけること（セルフコンパッション）が助けになります。一人で抱え込まず、支援者に話を聞いてもらうことも大切です。'
+  },
+  discrimination: {
+    low:  '多様性を尊重し、先入観なく人を見ようとする姿勢があります。この視点は包括的な職場・コミュニティの構築に貢献します。',
+    mid:  '無意識に偏見が働くことがあるかもしれません。「なぜそう感じたか?」と少し立ち止まるだけで、偏見への気づきが深まります。',
+    high: '無意識の偏見（アンコンシャス・バイアス）が働きやすい傾向があります。自分のバイアスに気づくこと自体が最初の大きな一歩です。異なる背景を持つ人の話を直接聞く機会を増やしましょう。「この人はどんな経験をしてきたのだろう?」と興味を持つことが、偏見を減らす有効なアプローチです。'
+  },
+  dependency: {
+    low:  '自立した判断力を持ちながら、他者とも協力できるバランスが取れています。この自律性は自己成長の重要な基盤です。',
+    mid:  '他者の承認を求めることがあるようです。「自分はどう感じているか?」を先に確認してから他者に聞く習慣が、自立的な判断を育てます。',
+    high: '他者への依存度が高い傾向があります。小さなことから「自分で決める」練習をしましょう。「今日のランチは何にしよう?」という選択から始めてみてください。一人でいる時間を少しずつ増やし、自分の気持ちを観察することも助けになります。依存の背景には不安や孤独感があることが多く、支援者と一緒に取り組むことが有効です。'
+  },
+  resistanceToChange: {
+    low:  '変化に柔軟に対応できています。適応力は、変化の激しい環境でも安定して活動するための大切な力です。',
+    mid:  '変化への抵抗を感じることがあるようです。「変化の後、どんないいことがあるか?」を一つ考えてみると、前向きな気持ちが生まれやすくなります。',
+    high: '変化を避けたり、新しいことへの抵抗が強い傾向があります。「慣れ親しんだ方法」が安心感を与えることは自然なことです。一方で、小さな変化から試してみると「意外と大丈夫だった」という経験が積み重なります。変化のメリットを具体的に書き出すことも助けになります。サポートがある状況で少しずつ試す方法が、無理なく変化に慣れる近道です。'
+  },
+  comparison: {
+    low:  '自分のペースで物事を進められています。他者との比較に振り回されない姿勢は、自己肯定感の安定につながります。',
+    mid:  '他者と比較してしまうことがあるようです。「過去の自分と比べて、どんな成長があったか?」に目を向けると、前向きな気持ちを取り戻しやすくなります。',
+    high: '自分を他者と比べやすい傾向があります。SNSの使用時間を意識し、見た後に気分が下がるなら距離を置くことをおすすめします。「他者との比較」から「過去の自分との比較」に意識を切り替えましょう。「今日、昨日より少し良くなったことは何か?」という問いが、自分軸を育てます。あなたの価値は他者との比較では決まりません。'
+  },
+  fearOfSuccess: {
+    low:  '成功を恐れずに挑戦できています。目標に向かって前進するエネルギーは、あなたの大きな強みです。',
+    mid:  '成功した後のことを心配することがあるようです。「成功したら具体的にどんな状況になるか?」をイメージしておくと、不安が和らぐことがあります。',
+    high: '成功することへの不安や恐れが強い傾向があります。「成功したら何が怖いか?」を書き出してみましょう。多くの場合、「期待に応えられないかも」「変わってしまうかも」という恐れが見えてきます。成功の定義を自分で決め、「小さな成功」を積み重ねることが助けになります。支援者やチームと一緒に目標に取り組むと、プレッシャーが分散されます。'
+  }
+};
+
+// ===========================
+// 状態管理
+// ===========================
+let state = {
+  currentIndex: 0,
+  answers: {},
+  shuffled: [],
+  results: null,
+  chartInstance: null
+};
+
+// ===========================
+// 初期化
+// ===========================
+function initTest() {
+  state.shuffled = [...questions].sort(() => Math.random() - 0.5);
+  state.currentIndex = 0;
+  state.answers = {};
+  state.results = null;
+
+  document.getElementById('test-section').classList.remove('hidden');
+  document.getElementById('result-section').classList.add('hidden');
+
+  renderQuestion();
+}
+
+// ===========================
+// 質問表示
+// ===========================
+function renderQuestion() {
+  const q = state.shuffled[state.currentIndex];
+  const num = state.currentIndex + 1;
+  const total = state.shuffled.length;
+  const pct = Math.round((num / total) * 100);
+
+  document.getElementById('q-counter').textContent = `質問 ${num} / ${total}`;
+  document.getElementById('q-percent').textContent = `${pct}%`;
+  document.getElementById('progress-bar').style.width = `${pct}%`;
+
+  const qText = document.getElementById('question-text');
+  qText.textContent = q.text;
+  qText.classList.remove('question-fade');
+  void qText.offsetWidth; // reflow
+  qText.classList.add('question-fade');
+
+  const optCont = document.getElementById('options-container');
+  optCont.innerHTML = '';
+
+  const opts = [
+    { v: 1, label: '全く当てはまらない' },
+    { v: 2, label: 'ほとんど当てはまらない' },
+    { v: 3, label: 'あまり当てはまらない' },
+    { v: 4, label: 'やや当てはまる' },
+    { v: 5, label: 'かなり当てはまる' },
+    { v: 6, label: '非常に当てはまる' }
+  ];
+
+  opts.forEach(o => {
+    const btn = document.createElement('button');
+    const isSelected = state.answers[q.id] === o.v;
+    btn.className = `option-btn w-full flex items-center gap-3 px-4 py-3 border rounded-xl text-left ${isSelected ? 'selected border-indigo-400' : 'border-gray-200 bg-white'}`;
+    btn.innerHTML = `
+      <span class="option-number flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-sm font-semibold
+        ${isSelected ? 'bg-indigo-500 text-white' : 'bg-indigo-100 text-indigo-600'}">
+        ${o.v}
+      </span>
+      <span class="text-sm text-gray-700">${o.label}</span>
+    `;
+    btn.addEventListener('click', () => selectAnswer(q.id, o.v));
+    optCont.appendChild(btn);
+  });
+
+  document.getElementById('prev-btn').disabled = state.currentIndex === 0;
+}
+
+function selectAnswer(qId, value) {
+  state.answers[qId] = value;
+
+  // ボタンUIを更新
+  const btns = document.querySelectorAll('.option-btn');
+  btns.forEach((btn, i) => {
+    const isNow = (i === value - 1);
+    btn.classList.toggle('selected', isNow);
+    btn.classList.toggle('border-indigo-400', isNow);
+    btn.classList.toggle('border-gray-200', !isNow);
+    btn.classList.toggle('bg-white', !isNow);
+
+    const numEl = btn.querySelector('.option-number');
+    if (numEl) {
+      numEl.className = `option-number flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-sm font-semibold ${isNow ? 'bg-indigo-500 text-white' : 'bg-indigo-100 text-indigo-600'}`;
+    }
+  });
+
+  // 次の質問へ
+  setTimeout(() => {
+    if (state.currentIndex < state.shuffled.length - 1) {
+      state.currentIndex++;
+      renderQuestion();
+    } else {
+      showResults();
+    }
+  }, 280);
+}
+
+// ===========================
+// 結果計算
+// ===========================
+function calcResults() {
+  const res = {};
+  thinkingPatterns.forEach(p => {
+    res[p.id] = { ...p, total: 0, count: 0, score: 0 };
+  });
+
+  state.shuffled.forEach(q => {
+    const a = state.answers[q.id];
+    if (a) {
+      res[q.patternId].total += a;
+      res[q.patternId].count++;
+    }
+  });
+
+  Object.keys(res).forEach(id => {
+    if (res[id].count > 0) {
+      res[id].score = parseFloat((res[id].total / res[id].count).toFixed(1));
+    }
+  });
+
+  return res;
+}
+
+// ===========================
+// 結果表示
+// ===========================
+function showResults() {
+  state.results = calcResults();
+
+  document.getElementById('test-section').classList.add('hidden');
+  document.getElementById('result-section').classList.remove('hidden');
+
+  // 結果日付
+  const now = new Date();
+  document.getElementById('result-date').textContent =
+    `${now.getFullYear()}年${now.getMonth()+1}月${now.getDate()}日`;
+  document.getElementById('print-title').classList.remove('hidden');
+
+  renderSummary(state.results);
+  renderRadarChart(state.results);
+  renderCategoryResults(state.results);
+
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ===========================
+// 総合コメント
+// ===========================
+function renderSummary(results) {
+  const sorted = Object.values(results).sort((a, b) => b.score - a.score);
+  const top3 = sorted.slice(0, 3);
+  const low3 = sorted.filter(p => p.score <= 2).slice(0, 3);
+
+  const container = document.getElementById('summary-text');
+  container.innerHTML = '';
+
+  // 上位3つ
+  const top3Line = document.createElement('p');
+  top3Line.innerHTML = `スコアが特に高い傾向として、<strong class="text-indigo-700">${top3.map(p => p.name).join('、')}</strong>が見られます。`;
+  container.appendChild(top3Line);
+
+  // 上位カテゴリへの簡単なコメント
+  top3.forEach(p => {
+    const line = document.createElement('p');
+    const level = p.score <= 2 ? 'low' : p.score <= 4 ? 'mid' : 'high';
+    const levelText = level === 'high' ? '強く見られます' : level === 'mid' ? '時々見られます' : 'あまり見られません';
+    line.innerHTML = `・<strong>${p.name}</strong>（スコア ${p.score}）: ${levelText}`;
+    container.appendChild(line);
+  });
+
+  // 強みコメント
+  if (low3.length > 0) {
+    const strengthLine = document.createElement('p');
+    strengthLine.className = 'text-indigo-700 font-medium mt-2';
+    strengthLine.innerHTML = `<strong>${low3.map(p => p.name).join('、')}</strong>の傾向が低いことは、あなたの大きな強みです。`;
+    container.appendChild(strengthLine);
+  } else {
+    const allMid = document.createElement('p');
+    allMid.className = 'text-indigo-700 font-medium mt-2';
+    allMid.textContent = '全体的にバランスが取れています。気になるカテゴリのアドバイスを参考にしてみてください。';
+    container.appendChild(allMid);
+  }
+}
+
+// ===========================
+// レーダーチャート
+// ===========================
+function renderRadarChart(results) {
+  const ctx = document.getElementById('radar-chart').getContext('2d');
+
+  if (state.chartInstance) {
+    state.chartInstance.destroy();
+  }
+
+  const labels = thinkingPatterns.map(p => p.name);
+  const data = thinkingPatterns.map(p => results[p.id].score);
+
+  state.chartInstance = new Chart(ctx, {
+    type: 'radar',
+    data: {
+      labels,
+      datasets: [{
+        label: '思考パターンスコア',
+        data,
+        backgroundColor: 'rgba(79, 70, 229, 0.15)',
+        borderColor: 'rgba(79, 70, 229, 0.8)',
+        borderWidth: 2,
+        pointBackgroundColor: 'rgba(79, 70, 229, 1)',
+        pointRadius: 4
+      }]
+    },
+    options: {
+      responsive: true,
+      scales: {
+        r: {
+          suggestedMin: 0,
+          suggestedMax: 6,
+          ticks: { stepSize: 1, font: { size: 10 } },
+          pointLabels: { font: { size: 11 } }
+        }
+      },
+      plugins: {
+        legend: { display: false }
+      }
+    }
+  });
+}
+
+// ===========================
+// カテゴリ別詳細
+// ===========================
+function renderCategoryResults(results) {
+  const container = document.getElementById('results-by-category');
+  container.innerHTML = '';
+
+  const categories = {};
+  thinkingPatterns.forEach(p => {
+    if (!categories[p.category]) categories[p.category] = [];
+    categories[p.category].push(p);
+  });
+
+  Object.entries(categories).forEach(([catName, patterns]) => {
+    const section = document.createElement('div');
+    section.className = 'mb-8 print-card';
+
+    // カテゴリヘッダー
+    const header = document.createElement('h3');
+    header.className = 'text-base font-bold pl-3 border-l-4 border-indigo-500 text-indigo-800 mb-4';
+    header.textContent = catName;
+    section.appendChild(header);
+
+    const grid = document.createElement('div');
+    grid.className = 'grid grid-cols-1 md:grid-cols-2 gap-4';
+
+    patterns.forEach(p => {
+      const r = results[p.id];
+      const level = r.score <= 2 ? 'low' : r.score <= 4 ? 'mid' : 'high';
+      const levelLabel = level === 'low' ? 'あまり見られない' : level === 'mid' ? '時々見られる' : '注意が必要';
+      const badgeClass = `badge-${level}`;
+      const adviceClass = `advice-${level}`;
+      const adviceText = advice[p.id][level];
+      const barPct = Math.round((r.score / 6) * 100);
+
+      const card = document.createElement('div');
+      card.className = 'bg-white rounded-xl shadow-sm border border-gray-100 p-4 print-card';
+      card.innerHTML = `
+        <div class="flex items-start justify-between mb-1">
+          <h4 class="font-bold text-gray-800 text-sm">${p.name}</h4>
+          <span class="score-badge ${badgeClass} ml-2 flex-shrink-0">${levelLabel}</span>
+        </div>
+        <p class="text-xs text-gray-500 mb-3">${p.description}</p>
+        <div class="score-bar mb-1">
+          <div class="score-bar-fill" style="width:${barPct}%; background-color:${p.color};"></div>
+        </div>
+        <div class="flex justify-between text-xs text-gray-500 mb-3">
+          <span>スコア</span>
+          <span class="font-semibold">${r.score} / 6</span>
+        </div>
+        <div class="advice-box ${adviceClass}">
+          ${adviceText}
+        </div>
+      `;
+      grid.appendChild(card);
+    });
+
+    section.appendChild(grid);
+    container.appendChild(section);
+  });
+}
+
+// ===========================
+// イベントリスナー
+// ===========================
+document.getElementById('prev-btn').addEventListener('click', () => {
+  if (state.currentIndex > 0) {
+    state.currentIndex--;
+    renderQuestion();
+  }
+});
+
+document.getElementById('restart-test-btn').addEventListener('click', initTest);
+document.getElementById('restart-btn').addEventListener('click', initTest);
+
+document.getElementById('print-btn').addEventListener('click', () => {
+  window.print();
+});
+
+// ===========================
+// 起動
+// ===========================
+initTest();
+</script>
+</body>
+</html>
