@@ -156,7 +156,7 @@
 // ===========================
 // Google Sheets URL（デプロイ後に差し替え）
 // ===========================
-const GOOGLE_SCRIPT_URL = 'YOUR_GAS_URL_HERE';
+const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzQBJ7Xj-Toe1wRd5z0s3LtUkh5E0MsM8FlZ9p_64xjOShwgY3VwLi53e871_wrogSB/exec';
 
 // ===========================
 // 思考パターン定義
@@ -625,7 +625,7 @@ async function showResults() {
 // Google Sheets 送信
 // ===========================
 async function sendToGoogleSheets(dateISO) {
-  if (GOOGLE_SCRIPT_URL === 'YOUR_GAS_URL_HERE') return;
+  if (GOOGLE_SCRIPT_URL === 'https://script.google.com/macros/s/AKfycbzQBJ7Xj-Toe1wRd5z0s3LtUkh5E0MsM8FlZ9p_64xjOShwgY3VwLi53e871_wrogSB/exec') return;
   const statusEl = document.getElementById('sheets-status');
   statusEl.classList.remove('hidden');
   statusEl.innerHTML = '<div class="text-xs text-gray-400 text-center py-2">結果を記録中...</div>';
@@ -654,7 +654,7 @@ async function sendToGoogleSheets(dateISO) {
 // 過去データ取得
 // ===========================
 async function fetchPreviousData() {
-  if (GOOGLE_SCRIPT_URL === 'YOUR_GAS_URL_HERE') return;
+  if (GOOGLE_SCRIPT_URL === 'https://script.google.com/macros/s/AKfycbzQBJ7Xj-Toe1wRd5z0s3LtUkh5E0MsM8FlZ9p_64xjOShwgY3VwLi53e871_wrogSB/exec') return;
   try {
     const url = GOOGLE_SCRIPT_URL + '?name=' + encodeURIComponent(state.userName);
     const res = await fetch(url);
