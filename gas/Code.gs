@@ -80,46 +80,32 @@ function doPost(e) {
 }
 
 /**
- * GET: 指定した名前の過去データを取得
- * クエリパラメータ: ?name=テスト名
+ * GET: データ取得
+ * クエリパラメータ:
+ *   ?name=テスト名  — 指定名のデータのみ返す
+ *   ?all=true       — 全データを返す（ダッシュボード用）
  */
 function doGet(e) {
-  try {
-    const name = e.parameter.name;
-    
-    if (!name) {
-      return ContentService
-        .createTextOutput(JSON.stringify({ status: 'error', message: 'name parameter is required' }))
-        .setMimeType(ContentService.MimeType.JSON);
-    }
-    
-    const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
-    const data = sheet.getDataRange().getValues();
-    
-    if (data.length < 2) {
-      return ContentService
-        .createTextOutput(JSON.stringify([]))
-        .setMimeType(ContentService.MimeType.JSON);
-    }
-    
-    const header = data[0];
-    
-    // 指定した名前のデータのみフィルタ
-    const results = data.slice(1)
-      .filter(row => row[0] === name)
-      .map(row => {
-        const obj = {};
-        header.forEach((h, i) => { obj[h] = row[i]; });
-        return obj;
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  const data = sheet.getDataRange().getValues();
+  const name = e.parameter.name || '';
+  const all = e.parameter.all === 'true';
+  
+  const results = [];
+  for (let i = 1; i < data.length; i++) {
+    if (all || data[i][0] === name) {
+      results.push({
+        name: data[i][0], date: data[i][1],
+        blackWhite: data[i][2], overgeneralization: data[i][3],
+        mindReading: data[i][4], anger: data[i][5],
+        victimMentality: data[i][6], mounting: data[i][7],
+        avoidance: data[i][8], cognitiveBias: data[i][9],
+        blaming: data[i][10], selfBlaming: data[i][11],
+        discrimination: data[i][12], dependency: data[i][13],
+        resistanceToChange: data[i][14], comparison: data[i][15],
+        fearOfSuccess: data[i][16]
       });
-    
-    return ContentService
-      .createTextOutput(JSON.stringify(results))
-      .setMimeType(ContentService.MimeType.JSON);
-      
-  } catch (err) {
-    return ContentService
-      .createTextOutput(JSON.stringify({ status: 'error', message: err.toString() }))
-      .setMimeType(ContentService.MimeType.JSON);
+    }
   }
+  return ContentService.createTextOutput(JSON.stringify(results)).setMimeType(ContentService.MimeType.JSON);
 }

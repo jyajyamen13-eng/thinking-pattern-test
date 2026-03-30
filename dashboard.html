@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>思考パターン分析テスト — 支援者ダッシュボード</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    body{background-color:#0f172a;font-family:'Hiragino Kaku Gothic ProN','Hiragino Sans','Meiryo',sans-serif;color:#e2e8f0}
+    ::-webkit-scrollbar{width:6px;height:6px}
+    ::-webkit-scrollbar-track{background:#1e293b}
+    ::-webkit-scrollbar-thumb{background:#475569;border-radius:3px}
+    .card{background:#1e293b;border:1px solid #334155;border-radius:12px}
+    .card-header{background:#263347;border-bottom:1px solid #334155;border-radius:12px 12px 0 0;padding:12px 16px;font-weight:600;font-size:.9rem;color:#94a3b8;text-transform:uppercase;letter-spacing:.05em}
+    .data-table{width:100%;border-collapse:collapse}
+    .data-table th{background:#1a2740;padding:10px 14px;text-align:left;font-size:.75rem;color:#64748b;text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid #334155;cursor:pointer;user-select:none;white-space:nowrap}
+    .data-table th:hover{color:#94a3b8}
+    .data-table th.sort-asc .si::after{content:' ▲'}
+    .data-table th.sort-desc .si::after{content:' ▼'}
+    .data-table th:not(.sort-asc):not(.sort-desc) .si{opacity:.5}
+    .data-table th:not(.sort-asc):not(.sort-desc) .si::after{content:' ⇅'}
+    .data-table td{padding:10px 14px;border-bottom:1px solid #1e293b;font-size:.875rem;vertical-align:middle}
+    .data-table tr:hover td{background:#1f3050;cursor:pointer}
+    .data-table tr.row-alert td{background:rgba(239,68,68,.08)}
+    .data-table tr.row-alert:hover td{background:rgba(239,68,68,.15)}
+    .data-table tr.row-selected td{background:#1d3461!important}
+    .badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:9999px;font-size:.7rem;font-weight:600}
+    .badge-red{background:rgba(239,68,68,.2);color:#fca5a5}
+    .badge-blue{background:rgba(59,130,246,.2);color:#93c5fd}
+    .badge-gray{background:rgba(100,116,139,.2);color:#94a3b8}
+    .trend-better{background:rgba(34,197,94,.2);color:#86efac}
+    .trend-worse{background:rgba(239,68,68,.2);color:#fca5a5}
+    .trend-same{background:rgba(100,116,139,.2);color:#94a3b8}
+    .score-bar-bg{flex:1;height:6px;background:#334155;border-radius:3px;overflow:hidden}
+    .score-bar-fill{height:100%;border-radius:3px;transition:width .8s ease}
+    .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);display:flex;align-items:center;justify-content:center;z-index:1000}
+    .modal-box{background:#1e293b;border:1px solid #334155;border-radius:16px;padding:32px;width:100%;max-width:400px;box-shadow:0 25px 60px rgba(0,0,0,.5)}
+    .form-input{width:100%;background:#0f172a;border:1px solid #334155;border-radius:8px;padding:10px 14px;color:#e2e8f0;font-size:1rem;outline:none;transition:border-color .2s;box-sizing:border-box}
+    .form-input:focus{border-color:#6366f1}
+    .btn-primary{background:#4f46e5;color:#fff;border:none;border-radius:8px;padding:10px 20px;font-size:.875rem;font-weight:600;cursor:pointer;transition:background .2s;width:100%}
+    .btn-primary:hover{background:#4338ca}
+    .btn-secondary{background:#334155;color:#e2e8f0;border:none;border-radius:8px;padding:8px 16px;font-size:.8rem;font-weight:600;cursor:pointer;transition:background .2s}
+    .btn-secondary:hover{background:#475569}
+    .stat-card{background:#1e293b;border:1px solid #334155;border-radius:10px;padding:16px 20px}
+    #detail-panel{display:none;animation:slideIn .2s ease}
+    @keyframes slideIn{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:translateY(0)}}
+    .search-input{background:#1e293b;border:1px solid #334155;border-radius:8px;padding:8px 12px;color:#e2e8f0;font-size:.875rem;outline:none;transition:border-color .2s;width:220px}
+    .search-input:focus{border-color:#6366f1}
+    .error-banner{background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.4);border-radius:8px;color:#fca5a5;padding:12px 16px}
+    .spinner{border:3px solid #334155;border-top-color:#6366f1;border-radius:50%;width:32px;height:32px;animation:spin .7s linear infinite;margin:0 auto}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .spinning{display:inline-block;animation:spin .7s linear infinite}
+    @media(max-width:768px){.detail-grid{grid-template-columns:1fr!important}#category-scores{grid-template-columns:1fr!important}}
+  </style>
+</head>
+<body class="min-h-screen">
+
+<!-- Password Modal -->
+<div id="password-modal" class="modal-overlay">
+  <div class="modal-box">
+    <div style="text-align:center;margin-bottom:24px">
+      <div style="font-size:2.5rem;margin-bottom:8px">&#128274;</div>
+      <h1 style="font-size:1.15rem;font-weight:700;color:#e2e8f0;margin:0">支援者ダッシュボード</h1>
+      <p style="font-size:.8rem;color:#64748b;margin:6px 0 0 0">アクセスにはパスワードが必要です</p>
+    </div>
+    <div id="pw-error" style="display:none;margin-bottom:14px" class="error-banner">パスワードが正しくありません</div>
+    <input type="password" id="pw-input" class="form-input" placeholder="パスワードを入力" style="margin-bottom:14px" />
+    <button onclick="checkPassword()" class="btn-primary">ログイン</button>
+  </div>
+</div>
+
+<!-- Dashboard -->
+<div id="dashboard" style="display:none">
+  <header style="background:#1a2740;border-bottom:1px solid #334155;padding:14px 24px;position:sticky;top:0;z-index:100">
+    <div style="max-width:1400px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+      <div>
+        <h1 style="font-size:1.1rem;font-weight:700;color:#e2e8f0;margin:0">
+          思考パターン分析テスト
+          <span style="color:#6366f1;margin-left:8px;font-size:.9rem">支援者ダッシュボード</span>
+        </h1>
+        <p id="last-updated" style="font-size:.75rem;color:#64748b;margin:2px 0 0 0">読み込み中...</p>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <button onclick="loadData()" id="refresh-btn" class="btn-secondary" style="display:flex;align-items:center;gap:6px">
+          <span id="refresh-icon">&#8635;</span> データ更新
+        </button>
+        <button onclick="logout()" class="btn-secondary" style="color:#94a3b8">ログアウト</button>
+      </div>
+    </div>
+  </header>
+
+  <main style="max-width:1400px;margin:0 auto;padding:24px 20px">
+    <div id="error-msg" style="display:none;margin-bottom:24px" class="error-banner">
+      データを読み込めませんでした。GAS のURLを確認するか、しばらく待ってから再試行してください。
+    </div>
+
+    <!-- Loading -->
+    <div id="loading-section" style="padding:60px 0;text-align:center">
+      <div class="spinner" style="margin-bottom:16px"></div>
+      <p style="color:#64748b;font-size:.875rem">データを取得中...</p>
+    </div>
+
+    <!-- Content -->
+    <div id="content-section" style="display:none">
+
+      <!-- Stats Row -->
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-bottom:24px">
+        <div class="stat-card">
+          <div style="font-size:.7rem;color:#64748b;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">受験者数</div>
+          <div id="stat-users" style="font-size:2rem;font-weight:700;color:#e2e8f0">—</div>
+        </div>
+        <div class="stat-card">
+          <div style="font-size:.7rem;color:#64748b;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">総受験回数</div>
+          <div id="stat-total" style="font-size:2rem;font-weight:700;color:#e2e8f0">—</div>
+        </div>
+        <div class="stat-card">
+          <div style="font-size:.7rem;color:#64748b;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">要注意利用者</div>
+          <div id="stat-alert" style="font-size:2rem;font-weight:700;color:#f87171">—</div>
+        </div>
+        <div class="stat-card">
+          <div style="font-size:.7rem;color:#64748b;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">最高傾向カテゴリ</div>
+          <div id="stat-top" style="font-size:.95rem;font-weight:700;color:#c084fc;padding-top:6px">—</div>
+        </div>
+      </div>
+
+      <!-- Users Table -->
+      <div class="card" style="margin-bottom:24px">
+        <div class="card-header" style="display:flex;align-items:center;justify-content:space-between">
+          <span>利用者一覧</span>
+          <input type="text" id="search-input" class="search-input" placeholder="名前で絞り込み..." oninput="filterTable()" />
+        </div>
+        <div style="overflow-x:auto">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th onclick="sortTable('name')" data-col="name">名前<span class="si"></span></th>
+                <th onclick="sortTable('count')" data-col="count">受験回数<span class="si"></span></th>
+                <th onclick="sortTable('date')" data-col="date">最終受験日<span class="si"></span></th>
+                <th>最高スコアカテゴリ</th>
+                <th onclick="sortTable('alertCount')" data-col="alertCount">要注意数<span class="si"></span></th>
+              </tr>
+            </thead>
+            <tbody id="users-tbody"></tbody>
+          </table>
+          <div id="no-results" style="display:none;padding:32px;text-align:center;color:#64748b;font-size:.875rem">
+            該当する利用者が見つかりませんでした
+          </div>
+        </div>
+      </div>
+
+      <!-- Detail Panel -->
+      <div id="detail-panel" class="card" style="margin-bottom:24px">
+        <div class="card-header" style="display:flex;align-items:center;justify-content:space-between">
+          <span id="detail-title">利用者詳細</span>
+          <button onclick="closeDetail()" style="background:none;border:none;color:#64748b;font-size:1.1rem;cursor:pointer;padding:0 4px">&#10005;</button>
+        </div>
+        <div style="padding:20px">
+          <div class="detail-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:24px">
+            <div>
+              <div style="font-size:.75rem;color:#64748b;text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px">受験履歴</div>
+              <div id="detail-history"></div>
+            </div>
+            <div>
+              <div style="font-size:.75rem;color:#64748b;text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px">最新スコア — レーダーチャート</div>
+              <div style="max-width:320px;margin:0 auto"><canvas id="radar-chart"></canvas></div>
+            </div>
+          </div>
+          <div id="trend-section" style="display:none;margin-bottom:24px">
+            <div style="font-size:.75rem;color:#64748b;text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px">スコア推移（上位5カテゴリ）</div>
+            <div style="height:220px"><canvas id="trend-chart"></canvas></div>
+          </div>
+          <div>
+            <div style="font-size:.75rem;color:#64748b;text-transform:uppercase;letter-spacing:.05em;margin-bottom:12px">全カテゴリ — スコア詳細（高い順）</div>
+            <div id="category-scores" style="display:grid;grid-template-columns:1fr 1fr;gap:10px"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Overall Stats -->
+      <div class="card">
+        <div class="card-header">全体統計 — カテゴリ別平均スコア</div>
+        <div style="padding:20px">
+          <div id="top3-section" style="margin-bottom:16px"></div>
+          <div style="height:260px"><canvas id="avg-bar-chart"></canvas></div>
+        </div>
+      </div>
+
+    </div><!-- /content-section -->
+  </main>
+</div><!-- /dashboard -->
+
+<script>
+// ================================================================
+// CONFIG
+// ================================================================
+var GAS_URL = 'https://script.google.com/macros/s/AKfycbzQBJ7Xj-Toe1wRd5z0s3LtUkh5E0MsM8FlZ9p_64xjOShwgY3VwLi53e871_wrogSB/exec';
+var PASSWORD = 'dc2026staff';
+var AUTH_KEY = 'dashboard_auth_v1';
+
+// ================================================================
+// CATEGORIES
+// ================================================================
+var CATEGORIES = [
+  {id:'blackWhite',         label:'白黒思考',                 group:'cognitive'},
+  {id:'overgeneralization', label:'過度の一般化',             group:'cognitive'},
+  {id:'mindReading',        label:'読心術的思考',             group:'cognitive'},
+  {id:'anger',              label:'アンガー思考',             group:'emotion'},
+  {id:'victimMentality',    label:'被害者意識思考',           group:'emotion'},
+  {id:'mounting',           label:'マウンティング思考',       group:'interpersonal'},
+  {id:'avoidance',          label:'回避型思考',               group:'interpersonal'},
+  {id:'cognitiveBias',      label:'認知バイアス思考',         group:'interpersonal'},
+  {id:'blaming',            label:'他責思考',                 group:'responsibility'},
+  {id:'selfBlaming',        label:'自責思考',                 group:'responsibility'},
+  {id:'discrimination',     label:'偏見・ステレオタイプ思考', group:'social'},
+  {id:'dependency',         label:'依存思考',                 group:'social'},
+  {id:'resistanceToChange', label:'変化拒否思考',             group:'growth'},
+  {id:'comparison',         label:'他人比較思考',             group:'growth'},
+  {id:'fearOfSuccess',      label:'成功恐怖思考',             group:'growth'},
+];
+
+var GC = {
+  cognitive:      {bar:'#ef4444', text:'#f87171'},
+  emotion:        {bar:'#f97316', text:'#fb923c'},
+  interpersonal:  {bar:'#eab308', text:'#facc15'},
+  responsibility: {bar:'#22c55e', text:'#4ade80'},
+  social:         {bar:'#3b82f6', text:'#60a5fa'},
+  growth:         {bar:'#a855f7', text:'#c084fc'},
+};
+
+// ================================================================
+// STATE
+// ================================================================
+var allRecords = [];
+var usersMap = {};
+var sortCol = 'name';
+var sortDir = 'asc';
+var currentUser = null;
+var radarChart = null;
+var trendChart = null;
+var avgBarChart = null;
+
+// ================================================================
+// AUTH
+// ================================================================
+function checkPassword() {
+  var v = document.getElementById('pw-input').value;
+  if (v === PASSWORD) {
+    localStorage.setItem(AUTH_KEY, '1');
+    document.getElementById('password-modal').style.display = 'none';
+    document.getElementById('dashboard').style.display = 'block';
+    loadData();
+  } else {
+    document.getElementById('pw-error').style.display = 'block';
+    document.getElementById('pw-input').value = '';
+    document.getElementById('pw-input').focus();
+  }
+}
+
+document.getElementById('pw-input').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') checkPassword();
+});
+
+function logout() {
+  localStorage.removeItem(AUTH_KEY);
+  location.reload();
+}
+
+// Auto-login check
+(function() {
+  if (localStorage.getItem(AUTH_KEY) === '1') {
+    document.getElementById('password-modal').style.display = 'none';
+    document.getElementById('dashboard').style.display = 'block';
+    loadData();
+  }
+})();
+
+// ================================================================
+// DATA LOADING
+// ================================================================
+async function loadData() {
+  var btn = document.getElementById('refresh-btn');
+  var icon = document.getElementById('refresh-icon');
+  btn.disabled = true;
+  icon.className = 'spinning';
+  document.getElementById('loading-section').style.display = 'block';
+  document.getElementById('content-section').style.display = 'none';
+  document.getElementById('error-msg').style.display = 'none';
+
+  try {
+    var res = await fetch(GAS_URL + '?all=true');
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    var data = await res.json();
+    if (data && data.status === 'error') throw new Error(data.message || 'GAS error');
+
+    allRecords = Array.isArray(data) ? data : [];
+
+    // Build usersMap
+    usersMap = {};
+    for (var i = 0; i < allRecords.length; i++) {
+      var r = allRecords[i];
+      var nm = String(r.name || '(不明)');
+      if (!usersMap[nm]) usersMap[nm] = [];
+      usersMap[nm].push(r);
+    }
+    // Sort each user's records by date ascending
+    Object.keys(usersMap).forEach(function(nm) {
+      usersMap[nm].sort(function(a, b) { return new Date(a.date) - new Date(b.date); });
+    });
+
+    updateStats();
+    renderTable();
+    renderAvgBarChart();
+
+    document.getElementById('last-updated').textContent = '最終更新: ' + new Date().toLocaleString('ja-JP');
+    document.getElementById('loading-section').style.display = 'none';
+    document.getElementById('content-section').style.display = 'block';
+
+    if (currentUser && usersMap[currentUser]) showDetail(currentUser);
+
+  } catch (err) {
+    console.error('loadData error:', err);
+    document.getElementById('loading-section').style.display = 'none';
+    document.getElementById('error-msg').style.display = 'block';
+    document.getElementById('content-section').style.display = 'block';
+  }
+
+  btn.disabled = false;
+  icon.className = '';
+}
+
+// ================================================================
+// HELPERS
+// ================================================================
+function sc(rec, id) {
+  var v = parseFloat(rec[id]);
+  return isNaN(v) ? 0 : v;
+}
+function latestRec(recs) { return recs[recs.length - 1]; }
+function prevRec(recs)   { return recs.length >= 2 ? recs[recs.length - 2] : null; }
+
+function topCategory(rec) {
+  var best = CATEGORIES[0], bestV = -1;
+  CATEGORIES.forEach(function(c) {
+    var v = sc(rec, c.id);
+    if (v > bestV) { bestV = v; best = c; }
+  });
+  return best;
+}
+
+function alertCount(rec) {
+  return CATEGORIES.filter(function(c) { return sc(rec, c.id) > 4.0; }).length;
+}
+
+function fmtDate(d) {
+  if (!d) return '—';
+  var dt = new Date(d);
+  return isNaN(dt.getTime()) ? String(d).slice(0, 10) : dt.toLocaleDateString('ja-JP');
+}
+
+function scoreColor(v) {
+  return v >= 4.0 ? '#ef4444' : v >= 2.5 ? '#eab308' : '#22c55e';
+}
+
+function esc(s) {
+  return String(s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ================================================================
+// STATS
+// ================================================================
+function updateStats() {
+  var names = Object.keys(usersMap);
+  document.getElementById('stat-users').textContent = names.length;
+  document.getElementById('stat-total').textContent = allRecords.length;
+
+  var alertUsers = names.filter(function(nm) {
+    return alertCount(latestRec(usersMap[nm])) > 0;
+  });
+  document.getElementById('stat-alert').textContent = alertUsers.length;
+
+  if (allRecords.length > 0) {
+    var avgs = CATEGORIES.map(function(c) {
+      var vals = allRecords.map(function(r) { return sc(r, c.id); });
+      return { c: c, avg: vals.reduce(function(a,b){return a+b;},0) / vals.length };
+    }).sort(function(a,b) { return b.avg - a.avg; });
+    document.getElementById('stat-top').textContent = avgs[0].c.label;
+  }
+}
+
+// ================================================================
+// TABLE
+// ================================================================
+function buildRows() {
+  return Object.keys(usersMap).map(function(nm) {
+    var recs = usersMap[nm];
+    var lat = latestRec(recs);
+    return {
+      name: nm,
+      count: recs.length,
+      date: lat.date,
+      topCat: topCategory(lat),
+      alertCount: alertCount(lat),
+    };
+  });
+}
+
+function sortTable(col) {
+  if (sortCol === col) {
+    sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+  } else {
+    sortCol = col;
+    sortDir = col === 'date' ? 'desc' : 'asc';
+  }
+  renderTable();
+}
+
+function filterTable() { renderTable(); }
+
+function renderTable() {
+  var rows = buildRows();
+  var q = (document.getElementById('search-input').value || '').toLowerCase();
+
+  document.querySelectorAll('.data-table th[data-col]').forEach(function(th) {
+    th.classList.remove('sort-asc', 'sort-desc');
+    if (th.dataset.col === sortCol) th.classList.add('sort-' + sortDir);
+  });
+
+  var filtered = q ? rows.filter(function(r) {
+    return r.name.toLowerCase().indexOf(q) !== -1;
+  }) : rows;
+
+  filtered = filtered.slice().sort(function(a, b) {
+    var va = a[sortCol], vb = b[sortCol];
+    if (sortCol === 'date') { va = new Date(va); vb = new Date(vb); }
+    if (sortCol === 'name') { va = va.toLowerCase(); vb = vb.toLowerCase(); }
+    if (va < vb) return sortDir === 'asc' ? -1 : 1;
+    if (va > vb) return sortDir === 'asc' ? 1 : -1;
+    return 0;
+  });
+
+  var tbody = document.getElementById('users-tbody');
+  var noRes = document.getElementById('no-results');
+  tbody.innerHTML = '';
+
+  if (filtered.length === 0) {
+    noRes.style.display = 'block';
+    return;
+  }
+  noRes.style.display = 'none';
+
+  filtered.forEach(function(row) {
+    var tr = document.createElement('tr');
+    if (row.alertCount > 0) tr.classList.add('row-alert');
+    if (currentUser === row.name) tr.classList.add('row-selected');
+    tr.onclick = (function(n){ return function(){ showDetail(n); }; })(row.name);
+
+    var gc2 = GC[row.topCat.group] || GC.cognitive;
+    var ab = row.alertCount > 0
+      ? '<span class="badge badge-red">&#9888; ' + row.alertCount + '件</span>'
+      : '<span class="badge badge-gray">0件</span>';
+
+    tr.innerHTML =
+      '<td style="font-weight:600;color:#e2e8f0">' + esc(row.name) + '</td>' +
+      '<td><span class="badge badge-blue">' + row.count + '回</span></td>' +
+      '<td style="color:#94a3b8">' + fmtDate(row.date) + '</td>' +
+      '<td style="color:' + gc2.text + ';font-weight:600">' + esc(row.topCat.label) + '</td>' +
+      '<td>' + ab + '</td>';
+    tbody.appendChild(tr);
+  });
+}
+
+// ================================================================
+// DETAIL
+// ================================================================
+function showDetail(name) {
+  currentUser = name;
+  renderTable();
+
+  var recs = usersMap[name];
+  var lat = latestRec(recs);
+  var prv = prevRec(recs);
+
+  document.getElementById('detail-title').textContent = '詳細 — ' + name;
+  document.getElementById('detail-panel').style.display = 'block';
+
+  // History list
+  var histEl = document.getElementById('detail-history');
+  histEl.innerHTML = '';
+  recs.slice().reverse().forEach(function(rec, i) {
+    var al = alertCount(rec);
+    var lt = i === 0 ? '<span class="badge badge-blue" style="margin-left:6px">最新</span>' : '';
+    var at = al > 0 ? '<span class="badge badge-red" style="margin-left:6px">&#9888; 要注意' + al + '</span>' : '';
+    var tot = CATEGORIES.reduce(function(s, c) { return s + sc(rec, c.id); }, 0);
+    var d = document.createElement('div');
+    d.style.cssText = 'padding:8px 12px;background:#0f172a;border-radius:8px;margin-bottom:6px;display:flex;align-items:center;justify-content:space-between';
+    d.innerHTML =
+      '<span style="color:#94a3b8;font-size:.8rem">' + fmtDate(rec.date) + lt + at + '</span>' +
+      '<span style="font-size:.75rem;color:#64748b">計 ' + tot.toFixed(1) + '</span>';
+    histEl.appendChild(d);
+  });
+
+  renderRadar(lat, prv);
+
+  if (recs.length > 1) {
+    document.getElementById('trend-section').style.display = 'block';
+    renderTrend(recs);
+  } else {
+    document.getElementById('trend-section').style.display = 'none';
+  }
+
+  renderCatScores(lat, prv);
+
+  setTimeout(function() {
+    document.getElementById('detail-panel').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, 50);
+}
+
+function closeDetail() {
+  currentUser = null;
+  document.getElementById('detail-panel').style.display = 'none';
+  renderTable();
+}
+
+// ================================================================
+// RADAR CHART
+// ================================================================
+function renderRadar(lat, prv) {
+  var ctx = document.getElementById('radar-chart').getContext('2d');
+  if (radarChart) radarChart.destroy();
+
+  var labels = CATEGORIES.map(function(c) { return c.label; });
+  var ds = [{
+    label: '最新',
+    data: CATEGORIES.map(function(c) { return sc(lat, c.id); }),
+    backgroundColor: 'rgba(99,102,241,.2)',
+    borderColor: 'rgba(99,102,241,.8)',
+    borderWidth: 2,
+    pointBackgroundColor: 'rgba(99,102,241,.9)',
+    pointRadius: 3,
+  }];
+
+  if (prv) {
+    ds.push({
+      label: '前回',
+      data: CATEGORIES.map(function(c) { return sc(prv, c.id); }),
+      backgroundColor: 'rgba(100,116,139,.1)',
+      borderColor: 'rgba(100,116,139,.5)',
+      borderWidth: 1.5,
+      borderDash: [4, 4],
+      pointBackgroundColor: 'rgba(100,116,139,.7)',
+      pointRadius: 2,
+    });
+  }
+
+  radarChart = new Chart(ctx, {
+    type: 'radar',
+    data: { labels: labels, datasets: ds },
+    options: {
+      responsive: true,
+      scales: {
+        r: {
+          min: 0, max: 5,
+          ticks: { stepSize: 1, color: '#64748b', font: { size: 9 }, backdropColor: 'transparent' },
+          grid: { color: '#334155' },
+          angleLines: { color: '#334155' },
+          pointLabels: { color: '#94a3b8', font: { size: 9 } },
+        }
+      },
+      plugins: { legend: { labels: { color: '#94a3b8', font: { size: 10 } } } }
+    }
+  });
+}
+
+// ================================================================
+// TREND CHART
+// ================================================================
+function renderTrend(recs) {
+  var ctx = document.getElementById('trend-chart').getContext('2d');
+  if (trendChart) trendChart.destroy();
+
+  var labels = recs.map(function(r) { return fmtDate(r.date); });
+  var lat = latestRec(recs);
+  var top5 = CATEGORIES.slice().sort(function(a, b) {
+    return sc(lat, b.id) - sc(lat, a.id);
+  }).slice(0, 5);
+
+  var datasets = top5.map(function(c) {
+    return {
+      label: c.label,
+      data: recs.map(function(r) { return sc(r, c.id); }),
+      borderColor: GC[c.group].bar,
+      backgroundColor: 'transparent',
+      borderWidth: 2,
+      pointRadius: 4,
+      tension: 0.3,
+    };
+  });
+
+  trendChart = new Chart(ctx, {
+    type: 'line',
+    data: { labels: labels, datasets: datasets },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        x: { ticks: { color: '#64748b', font: { size: 10 } }, grid: { color: '#1e293b' } },
+        y: { min: 0, max: 5, ticks: { color: '#64748b', font: { size: 10 } }, grid: { color: '#334155' } }
+      },
+      plugins: { legend: { labels: { color: '#94a3b8', font: { size: 10 } } } }
+    }
+  });
+}
+
+// ================================================================
+// CATEGORY SCORE BARS
+// ================================================================
+function renderCatScores(lat, prv) {
+  var el = document.getElementById('category-scores');
+  el.innerHTML = '';
+
+  var sorted = CATEGORIES.slice().sort(function(a, b) {
+    return sc(lat, b.id) - sc(lat, a.id);
+  });
+
+  sorted.forEach(function(cat) {
+    var v = sc(lat, cat.id);
+    var pv = prv ? sc(prv, cat.id) : null;
+    var pct = Math.min((v / 5) * 100, 100);
+    var g = GC[cat.group];
+
+    var tb = '';
+    if (pv !== null) {
+      var diff = v - pv;
+      tb = diff < -0.09
+        ? '<span class="badge trend-better" style="font-size:.65rem;padding:1px 6px">&#9660; 改善</span>'
+        : diff > 0.09
+          ? '<span class="badge trend-worse" style="font-size:.65rem;padding:1px 6px">&#9650; 悪化</span>'
+          : '<span class="badge trend-same" style="font-size:.65rem;padding:1px 6px">&#8212; 変化なし</span>';
+    }
+
+    var ad = v > 4.0 ? '<span style="color:#ef4444;margin-left:3px;font-size:.7rem">&#9679;</span>' : '';
+
+    var div = document.createElement('div');
+    div.style.cssText = 'background:#0f172a;border-radius:8px;padding:10px 12px';
+    div.innerHTML =
+      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">' +
+        '<span style="font-size:.78rem;color:' + g.text + ';font-weight:600">' + esc(cat.label) + ad + '</span>' +
+        '<div style="display:flex;align-items:center;gap:6px">' + tb +
+          '<span style="font-size:.8rem;font-weight:700;color:' + scoreColor(v) + '">' + v.toFixed(1) + '</span>' +
+        '</div>' +
+      '</div>' +
+      '<div class="score-bar-bg"><div class="score-bar-fill" style="width:' + pct + '%;background:' + g.bar + '"></div></div>';
+    el.appendChild(div);
+  });
+}
+
+// ================================================================
+// AVG BAR CHART
+// ================================================================
+function renderAvgBarChart() {
+  var ctx = document.getElementById('avg-bar-chart').getContext('2d');
+  if (avgBarChart) avgBarChart.destroy();
+
+  if (allRecords.length === 0) {
+    ctx.fillStyle = '#64748b';
+    ctx.font = '14px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('データがありません', ctx.canvas.width / 2, 130);
+    return;
+  }
+
+  var avgs = CATEGORIES.map(function(c) {
+    var vals = allRecords.map(function(r) { return sc(r, c.id); });
+    return vals.reduce(function(a,b){return a+b;},0) / vals.length;
+  });
+
+  var ranked = CATEGORIES.map(function(c, i) {
+    return { c: c, avg: avgs[i] };
+  }).sort(function(a, b) { return b.avg - a.avg; });
+
+  var medals = ['&#127945;', '&#127946;', '&#127947;'];
+  var top3Html = '<span style="font-size:.7rem;color:#64748b;text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:8px">高傾向 TOP3</span>' +
+    ranked.slice(0, 3).map(function(item, i) {
+      return '<span style="display:inline-flex;align-items:center;gap:6px;background:#0f172a;border-radius:8px;padding:6px 12px;margin-right:8px;margin-bottom:4px">' +
+        '<span>' + medals[i] + '</span>' +
+        '<span style="color:' + GC[item.c.group].text + ';font-size:.85rem;font-weight:600">' + esc(item.c.label) + '</span>' +
+        '<span style="color:#64748b;font-size:.75rem">' + item.avg.toFixed(2) + '</span>' +
+        '</span>';
+    }).join('');
+  document.getElementById('top3-section').innerHTML = top3Html;
+
+  var bgColors   = CATEGORIES.map(function(c) { return GC[c.group].bar + 'cc'; });
+  var bdColors   = CATEGORIES.map(function(c) { return GC[c.group].bar; });
+
+  avgBarChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: CATEGORIES.map(function(c) { return c.label; }),
+      datasets: [{
+        label: '平均スコア',
+        data: avgs,
+        backgroundColor: bgColors,
+        borderColor: bdColors,
+        borderWidth: 1,
+        borderRadius: 4,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        x: { ticks: { color: '#64748b', font: { size: 9 }, maxRotation: 35, minRotation: 20 }, grid: { color: '#1e293b' } },
+        y: { min: 0, max: 5, ticks: { color: '#64748b', font: { size: 10 } }, grid: { color: '#334155' } }
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: function(ctx) { return ' ' + ctx.parsed.y.toFixed(2); } } }
+      }
+    }
+  });
+}
+</script>
+</body>
+</html>
