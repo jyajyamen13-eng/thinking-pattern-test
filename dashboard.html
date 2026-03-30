@@ -281,21 +281,21 @@ var PASSWORD = 'dc2026staff';
 var AUTH_KEY = 'dashboard_auth_v1';
 
 var CATEGORIES = [
-  {id:'blackWhite',         label:'白黒思考',                 group:'cognitive'},
-  {id:'overgeneralization', label:'過度の一般化',             group:'cognitive'},
-  {id:'mindReading',        label:'読心術的思考',             group:'cognitive'},
-  {id:'anger',              label:'アンガー思考',             group:'emotion'},
-  {id:'victimMentality',    label:'被害者意識思考',           group:'emotion'},
-  {id:'mounting',           label:'マウンティング思考',       group:'interpersonal'},
-  {id:'avoidance',          label:'回避型思考',               group:'interpersonal'},
-  {id:'cognitiveBias',      label:'認知バイアス思考',         group:'interpersonal'},
-  {id:'blaming',            label:'他責思考',                 group:'responsibility'},
-  {id:'selfBlaming',        label:'自責思考',                 group:'responsibility'},
-  {id:'discrimination',     label:'偏見・ステレオタイプ思考', group:'social'},
-  {id:'dependency',         label:'依存思考',                 group:'social'},
-  {id:'resistanceToChange', label:'変化拒否思考',             group:'growth'},
-  {id:'comparison',         label:'他人比較思考',             group:'growth'},
-  {id:'fearOfSuccess',      label:'成功恐怖思考',             group:'growth'},
+  {id:'blackWhite',         label:'白黒思考',                 group:'cognitive', scale:'CDS'},
+  {id:'overgeneralization', label:'過度の一般化',             group:'cognitive', scale:'CDS'},
+  {id:'mindReading',        label:'読心術的思考',             group:'cognitive', scale:'CDS/FNE'},
+  {id:'anger',              label:'アンガー思考',             group:'emotion', scale:'STAXI-2'},
+  {id:'victimMentality',    label:'被害者意識思考',           group:'emotion', scale:'TIV'},
+  {id:'mounting',           label:'マウンティング思考',       group:'interpersonal', scale:'NPI'},
+  {id:'avoidance',          label:'回避型思考',               group:'interpersonal', scale:'AAQ-II'},
+  {id:'cognitiveBias',      label:'認知バイアス思考',         group:'interpersonal', scale:'CRT/CBQp'},
+  {id:'blaming',            label:'他責思考',                 group:'responsibility', scale:'ASQ'},
+  {id:'selfBlaming',        label:'自責思考',                 group:'responsibility', scale:'ATQ-30'},
+  {id:'discrimination',     label:'偏見・ステレオタイプ思考', group:'social', scale:'IAT'},
+  {id:'dependency',         label:'依存思考',                 group:'social', scale:'IDI/YSQ'},
+  {id:'resistanceToChange', label:'変化拒否思考',             group:'growth', scale:'IUS-12'},
+  {id:'comparison',         label:'他人比較思考',             group:'growth', scale:'INCOM'},
+  {id:'fearOfSuccess',      label:'成功恐怖思考',             group:'growth', scale:'FOSS'},
 ];
 
 var GC = {
@@ -800,7 +800,7 @@ function renderCatScores(lat, prv) {
     div.style.cssText = 'background:#0f172a;border-radius:8px;padding:10px 12px';
     div.innerHTML =
       '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">' +
-        '<span style="font-size:.78rem;color:' + g.text + ';font-weight:600">' + esc(cat.label) + ad + '</span>' +
+        '<span style="font-size:.78rem;color:' + g.text + ';font-weight:600">' + esc(cat.label) + (cat.scale ? ' <span style="font-size:.65rem;color:#64748b">(' + cat.scale + ')</span>' : '') + ad + '</span>' +
         '<div style="display:flex;align-items:center;gap:6px">' + tb +
           '<span style="font-size:.8rem;font-weight:700;color:' + scoreColor(v) + '">' + v.toFixed(1) + '</span>' +
         '</div>' +
