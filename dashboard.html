@@ -888,9 +888,17 @@ function openReportModal() {
   var scores = {};
   CATEGORIES.forEach(function(c) { scores[c.id] = sc(rec, c.id); });
 
+  // 前回データを取得（1つ前のセッション）
+  var prevScores = null;
+  if (idx > 0) {
+    var prevRec = recs[idx - 1];
+    prevScores = {};
+    CATEGORIES.forEach(function(c) { prevScores[c.id] = sc(prevRec, c.id); });
+  }
+
   renderRptSummary(scores);
-  renderRptRadar(scores);
-  renderRptCategories(scores);
+  renderRptRadar(scores, prevScores);
+  renderRptCategories(scores, prevScores);
 
   var modal = document.getElementById('report-modal');
   modal.classList.add('open');
@@ -942,7 +950,7 @@ function renderRptSummary(scores) {
   document.getElementById('rpt-summary').innerHTML = html;
 }
 
-function renderRptRadar(scores) {
+function renderRptRadar(scores, prevScores) {
   var canvas = document.getElementById('rpt-radar-chart');
   var ctx = canvas.getContext('2d');
   if (rptRadarChart) { rptRadarChart.destroy(); rptRadarChart = null; }
@@ -954,15 +962,30 @@ function renderRptRadar(scores) {
     type: 'radar',
     data: {
       labels: labels,
-      datasets: [{
-        label: 'スコア',
-        data: data,
-        backgroundColor: 'rgba(79,70,229,.15)',
-        borderColor: 'rgba(79,70,229,.8)',
-        borderWidth: 2,
-        pointBackgroundColor: 'rgba(79,70,229,1)',
-        pointRadius: 4,
-      }]
+      datasets: (function() {
+        var ds = [{
+          label: '今回',
+          data: data,
+          backgroundColor: 'rgba(79,70,229,.15)',
+          borderColor: 'rgba(79,70,229,.8)',
+          borderWidth: 2,
+          pointBackgroundColor: 'rgba(79,70,229,1)',
+          pointRadius: 4,
+        }];
+        if (prevScores) {
+          ds.push({
+            label: '前回',
+            data: PATTERNS.map(function(p) { return prevScores[p.id] || 0; }),
+            backgroundColor: 'rgba(251,146,60,.15)',
+            borderColor: 'rgba(251,146,60,.8)',
+            borderWidth: 2.5,
+            borderDash: [6, 4],
+            pointBackgroundColor: 'rgba(251,146,60,.9)',
+            pointRadius: 3,
+          });
+        }
+        return ds;
+      })()
     },
     options: {
       responsive: true,
@@ -976,12 +999,12 @@ function renderRptRadar(scores) {
           angleLines: { color: '#cbd5e1' },
         }
       },
-      plugins: { legend: { display: false } }
+      plugins: { legend: { display: !!prevScores, labels: { font: { size: 11 } } } }
     }
   });
 }
 
-function renderRptCategories(scores) {
+function renderRptCategories(scores, prevScores) {
   var container = document.getElementById('rpt-categories');
   container.innerHTML = '';
 
@@ -1029,7 +1052,7 @@ function renderRptCategories(scores) {
         '<div class="rpt-score-bar">' +
           '<div class="rpt-score-bar-fill" style="width:' + barPct + '%;background:' + p.color + '"></div>' +
         '</div>' +
-        '<div class="rpt-score-num">スコア: ' + v.toFixed(1) + ' / 6</div>' +
+        '<div class="rpt-score-num">' + (function() { if (prevScores) { var pv = (prevScores[p.id] || 0); var diff = v - pv; var arrow = diff < -0.09 ? '<span style="color:#16a34a">▼改善</span>' : diff > 0.09 ? '<span style="color:#ef4444">▲上昇</span>' : '<span style="color:#64748b">— 変化なし</span>'; return '前回: ' + pv.toFixed(1) + ' → 今回: ' + v.toFixed(1) + ' ' + arrow; } return 'スコア: ' + v.toFixed(1) + ' / 6'; })() + '</div>' +
         '<div class="advice-box advice-' + level + '">' + (ADVICE[p.id] ? ADVICE[p.id][level] : '') + '</div>';
       grid.appendChild(card);
     });
