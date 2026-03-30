@@ -705,12 +705,12 @@ function renderRadar(lat, prv) {
     ds.push({
       label: '前回',
       data: CATEGORIES.map(function(c) { return sc(prv, c.id); }),
-      backgroundColor: 'rgba(100,116,139,.1)',
-      borderColor: 'rgba(100,116,139,.5)',
-      borderWidth: 1.5,
-      borderDash: [4, 4],
-      pointBackgroundColor: 'rgba(100,116,139,.7)',
-      pointRadius: 2,
+      backgroundColor: 'rgba(251,146,60,.15)',
+      borderColor: 'rgba(251,146,60,.8)',
+      borderWidth: 2.5,
+      borderDash: [6, 4],
+      pointBackgroundColor: 'rgba(251,146,60,.9)',
+      pointRadius: 3,
     });
   }
 
