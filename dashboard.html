@@ -52,6 +52,45 @@
     @keyframes spin{to{transform:rotate(360deg)}}
     .spinning{display:inline-block;animation:spin .7s linear infinite}
     @media(max-width:768px){.detail-grid{grid-template-columns:1fr!important}#category-scores{grid-template-columns:1fr!important}}
+    /* ===== 結果レポートモーダル ===== */
+    #report-modal{position:fixed;inset:0;background:rgba(0,0,0,.85);display:none;align-items:flex-start;justify-content:center;z-index:2000;overflow-y:auto;padding:20px}
+    #report-modal.open{display:flex}
+    #report-modal-inner{background:#fff;color:#1e293b;border-radius:16px;width:100%;max-width:860px;margin:auto;box-shadow:0 30px 80px rgba(0,0,0,.6);overflow:hidden}
+    .report-header{background:linear-gradient(135deg,#3730a3,#6366f1);padding:24px 32px;color:#fff}
+    .report-body{padding:28px 32px}
+    .report-section{margin-bottom:28px}
+    .report-section-title{font-size:.85rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#6366f1;border-bottom:2px solid #e0e7ff;padding-bottom:6px;margin-bottom:14px}
+    .rpt-summary{background:#eef2ff;border:1px solid #c7d2fe;border-radius:10px;padding:16px 20px;font-size:.9rem;color:#3730a3;line-height:1.8}
+    .rpt-cat-card{background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:14px 16px;break-inside:avoid;page-break-inside:avoid}
+    .rpt-cat-name{font-weight:700;font-size:.9rem;margin-bottom:4px}
+    .rpt-cat-desc{font-size:.78rem;color:#64748b;margin-bottom:8px}
+    .rpt-score-bar{height:8px;background:#e2e8f0;border-radius:9999px;overflow:hidden;margin-bottom:4px}
+    .rpt-score-bar-fill{height:100%;border-radius:9999px;transition:width 1s ease}
+    .rpt-score-num{font-size:.75rem;color:#64748b;text-align:right;margin-bottom:6px}
+    .advice-box{border-left:3px solid;padding:.5rem .75rem;border-radius:0 4px 4px 0;font-size:.82rem;line-height:1.65}
+    .advice-low{border-color:#22c55e;background-color:#f0fdf4;color:#166534}
+    .advice-mid{border-color:#eab308;background-color:#fefce8;color:#854d0e}
+    .advice-high{border-color:#ef4444;background-color:#fef2f2;color:#991b1b}
+    .score-badge-rpt{display:inline-block;padding:2px 10px;border-radius:9999px;font-size:.72rem;font-weight:600}
+    .badge-low-rpt{background:#dcfce7;color:#166534}
+    .badge-mid-rpt{background:#fef9c3;color:#854d0e}
+    .badge-high-rpt{background:#fee2e2;color:#991b1b}
+    .btn-report{background:#6366f1;color:#fff;border:none;border-radius:8px;padding:8px 18px;font-size:.8rem;font-weight:700;cursor:pointer;transition:background .2s;display:inline-flex;align-items:center;gap:6px}
+    .btn-report:hover{background:#4f46e5}
+    .btn-report-close{background:#f1f5f9;color:#475569;border:none;border-radius:8px;padding:8px 18px;font-size:.8rem;font-weight:700;cursor:pointer;transition:background .2s;display:inline-flex;align-items:center;gap:6px}
+    .btn-report-close:hover{background:#e2e8f0}
+    .rpt-session-select{background:#1e293b;border:1px solid #475569;border-radius:8px;padding:6px 12px;font-size:.85rem;color:#e2e8f0;outline:none;cursor:pointer}
+    .rpt-session-select:focus{border-color:#6366f1}
+    @media print {
+      body{background:#fff!important;color:#1e293b!important}
+      #dashboard>*:not(#report-modal){display:none!important}
+      #report-modal{position:static!important;display:block!important;background:none!important;padding:0!important;overflow:visible!important}
+      #report-modal-inner{box-shadow:none!important;max-width:100%!important}
+      .no-print-rpt{display:none!important}
+      .rpt-cat-card{break-inside:avoid;page-break-inside:avoid}
+      .report-header{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+      .advice-low,.advice-mid,.advice-high{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    }
   </style>
 </head>
 <body class="min-h-screen">
@@ -174,6 +213,17 @@
             <div style="font-size:.75rem;color:#64748b;text-transform:uppercase;letter-spacing:.05em;margin-bottom:12px">全カテゴリ — スコア詳細（高い順）</div>
             <div id="category-scores" style="display:grid;grid-template-columns:1fr 1fr;gap:10px"></div>
           </div>
+          <!-- 結果レポートボタン -->
+          <div id="report-btn-row" style="margin-top:20px;padding-top:16px;border-top:1px solid #334155;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+            <button class="btn-report" onclick="openReportModal()">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+              結果レポートを表示
+            </button>
+            <div style="display:flex;align-items:center;gap:8px">
+              <label style="font-size:.75rem;color:#64748b">受験回を選択:</label>
+              <select id="session-select" class="rpt-session-select" onchange="openReportModal()"></select>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -190,17 +240,46 @@
   </main>
 </div><!-- /dashboard -->
 
+<!-- ===== 結果レポートモーダル ===== -->
+<div id="report-modal">
+  <div id="report-modal-inner">
+    <div class="report-header">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px">
+        <div>
+          <h2 style="font-size:1.2rem;font-weight:700;margin:0 0 4px 0">思考パターン分析テスト — 結果レポート</h2>
+          <p id="rpt-meta" style="font-size:.85rem;opacity:.85;margin:0"></p>
+        </div>
+        <div class="no-print-rpt" style="display:flex;gap:8px;flex-shrink:0">
+          <button class="btn-report-close" onclick="printReport()">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+            印刷 / PDF保存
+          </button>
+          <button class="btn-report-close" onclick="closeReportModal()">&#10005; 閉じる</button>
+        </div>
+      </div>
+    </div>
+    <div class="report-body">
+      <div class="report-section">
+        <div class="report-section-title">あなたの思考傾向の特徴</div>
+        <div id="rpt-summary" class="rpt-summary"></div>
+      </div>
+      <div class="report-section">
+        <div class="report-section-title">思考パターン レーダーチャート</div>
+        <div style="max-width:480px;margin:0 auto"><canvas id="rpt-radar-chart"></canvas></div>
+      </div>
+      <div class="report-section">
+        <div class="report-section-title">カテゴリ別詳細（15カテゴリ）</div>
+        <div id="rpt-categories"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
-// ================================================================
-// CONFIG
-// ================================================================
 var GAS_URL = 'https://script.google.com/macros/s/AKfycbzQBJ7Xj-Toe1wRd5z0s3LtUkh5E0MsM8FlZ9p_64xjOShwgY3VwLi53e871_wrogSB/exec';
 var PASSWORD = 'dc2026staff';
 var AUTH_KEY = 'dashboard_auth_v1';
 
-// ================================================================
-// CATEGORIES
-// ================================================================
 var CATEGORIES = [
   {id:'blackWhite',         label:'白黒思考',                 group:'cognitive'},
   {id:'overgeneralization', label:'過度の一般化',             group:'cognitive'},
@@ -228,9 +307,102 @@ var GC = {
   growth:         {bar:'#a855f7', text:'#c084fc'},
 };
 
-// ================================================================
-// STATE
-// ================================================================
+var PATTERNS = [
+  { id: 'blackWhite',         name: '白黒思考',                 category: '認知の歪み系',       color: '#ef4444', description: '物事を極端な二択で捉える思考パターン' },
+  { id: 'overgeneralization', name: '過度の一般化',             category: '認知の歪み系',       color: '#f87171', description: '一つの出来事から全てを一般化して考える思考パターン' },
+  { id: 'mindReading',        name: '読心術的思考',             category: '認知の歪み系',       color: '#fca5a5', description: '他者の考えを根拠なく推測する思考パターン' },
+  { id: 'anger',              name: 'アンガー思考',             category: '情動コントロール系', color: '#f97316', description: '怒りの感情が思考を支配するパターン' },
+  { id: 'victimMentality',    name: '被害者意識思考',           category: '情動コントロール系', color: '#fb923c', description: '自分を被害者として位置づける思考パターン' },
+  { id: 'mounting',           name: 'マウンティング思考',       category: '対人関係系',         color: '#eab308', description: '自分の優位性を示そうとする思考パターン' },
+  { id: 'avoidance',          name: '回避型思考',               category: '対人関係系',         color: '#facc15', description: '問題や対立を避けようとする思考パターン' },
+  { id: 'cognitiveBias',      name: '認知バイアス思考',         category: '対人関係系',         color: '#fde047', description: '先入観や偏見に基づいて判断する思考パターン' },
+  { id: 'blaming',            name: '他責思考',                 category: '責任認知系',         color: '#16a34a', description: '問題の原因を他人や環境に求める思考パターン' },
+  { id: 'selfBlaming',        name: '自責思考',                 category: '責任認知系',         color: '#4ade80', description: '問題の原因を過度に自分に求める思考パターン' },
+  { id: 'discrimination',     name: '偏見・ステレオタイプ思考', category: '社会的背景系',       color: '#2563eb', description: '特定の属性に基づいて人を区別する思考パターン' },
+  { id: 'dependency',         name: '依存思考',                 category: '社会的背景系',       color: '#60a5fa', description: '他者や物事に過度に依存する思考パターン' },
+  { id: 'resistanceToChange', name: '変化拒否思考',             category: '成長阻害系',         color: '#9333ea', description: '変化や新しいことを避ける思考パターン' },
+  { id: 'comparison',         name: '他人比較思考',             category: '成長阻害系',         color: '#a855f7', description: '自分を常に他者と比較する思考パターン' },
+  { id: 'fearOfSuccess',      name: '成功恐怖思考',             category: '成長阻害系',         color: '#c084fc', description: '成功することへの不安や恐れを持つ思考パターン' }
+];
+
+var ADVICE = {
+  blackWhite: {
+    low:  'バランスよく物事を捉えられています。多面的な視点を持ち続けることで、柔軟な判断力がさらに磨かれます。',
+    mid:  'ときどき「白か黒か」で判断してしまうことがあるようです。「どちらでもある」「どちらとも言えない」という言葉を意識的に使う練習が効果的です。',
+    high: '物事を二択で捉えがちな傾向があります。「グレーゾーン」を意識する練習をしてみましょう。「〜かもしれない」「〜という側面もある」という表現を使い、中間の可能性を探す習慣が助けになります。また、「完璧でなくても十分」という基準を持つと楽になることがあります。'
+  },
+  overgeneralization: {
+    low:  '一つの出来事から過度に一般化せず、柔軟に状況を判断できています。この視点は人間関係をスムーズにする大きな強みです。',
+    mid:  'ときどき「いつもこうだ」と考えてしまうことがあるかもしれません。「今回は」「この時だけ」という言葉に言い換えると、一つの出来事を正確に捉えやすくなります。',
+    high: '一つの経験から「いつも〜だ」「全部〜だ」と結論づけやすい傾向があります。出来事を記録して振り返ると、「実は例外もある」と気づけることが多いです。「今回は」という言葉に意識的に置き換える練習がおすすめです。認知行動療法のコラム法も参考になります。'
+  },
+  mindReading: {
+    low:  '他者の考えを決めつけず、確認しようとする姿勢が見られます。コミュニケーションの信頼感につながる大切な特性です。',
+    mid:  '相手の気持ちを推測しすぎてしまうことが少しあるようです。「本当にそう思っているかどうか、聞いてみる」という選択肢を持つと、思い込みが減ります。',
+    high: '根拠なく相手の考えを確信してしまいやすい傾向があります。「相手はこう思っているはず」と感じたとき、「私はこう思った。実際はどうですか?」と確認する習慣をつけましょう。確認することで誤解が解けるケースがほとんどです。相手も正直な気持ちを話してもらえると喜ぶことが多いです。'
+  },
+  anger: {
+    low:  '感情のコントロールが安定しています。落ち着いた状態を保てることは、良好な人間関係の土台になります。',
+    mid:  '怒りを感じることがときどきあるようです。怒りを感じたとき、「なぜ怒っているか」を一言で言語化するだけで感情が落ち着くことがあります。',
+    high: '怒りの感情が強く出やすい傾向があります。「6秒ルール」（怒りのピークは6秒で過ぎる）を活用し、感じたらその場を離れるか、深呼吸を6回してみてください。怒りの下には「悲しみ」「不安」「疲れ」が隠れていることも多いです。安心できる環境で感情を整理することが大切です。支援者に相談することも有効です。'
+  },
+  victimMentality: {
+    low:  '公平な視点で状況を捉えられています。自分の行動と外部の影響を区別できることは、自己成長の力になります。',
+    mid:  '不公平に感じる状況があるようです。「自分にできることは何か」を小さくても一つ考えるだけで、無力感が少し和らぐことがあります。',
+    high: '自分が不当な扱いを受けていると感じることが多い傾向があります。「自分の影響できる範囲」と「できない範囲」を分けて考えることが助けになります。信頼できる人に話を聞いてもらい、客観的な視点をもらうことも大切です。自分の強みや、うまくいっていることに目を向ける時間を意識的に作りましょう。'
+  },
+  mounting: {
+    low:  '相手の話を尊重し、対話を大切にできています。謙虚さと自信のバランスが取れている特性です。',
+    mid:  '自分の経験や知識をシェアしたくなることがあるようです。「相手から学ぶ」という姿勢を意識すると、対話がより豊かになります。',
+    high: '自分の優位性を示したくなる傾向があります。相手に「あなたはどう思いますか?」と質問し、話を聞く時間を意識的に増やしてみましょう。相手の話に興味を持つことで、自分への信頼も自然と高まります。マウンティングは「認められたい」という気持ちの表れであることが多く、その気持ち自体は自然なことです。'
+  },
+  avoidance: {
+    low:  '困難な状況にも向き合える姿勢があります。直面する力は、長期的な自己成長と信頼関係の構築につながります。',
+    mid:  '難しい状況を避けたくなることがあるようです。「避けること」と「今は取り組まない選択をすること」を区別してみてください。意識的な選択は有効な対処法です。',
+    high: '問題や対立を避けがちな傾向があります。「避けること」と「今は選ばないこと」の違いを意識しましょう。小さな一歩から始めることが大切です。「この問題の、一番簡単に解決できる部分は何か?」と考えると行動しやすくなります。支援者や信頼できる人に同席してもらうことも助けになります。'
+  },
+  cognitiveBias: {
+    low:  '先入観に縛られず、情報をフラットに捉えようとする姿勢が見られます。批判的思考力は、判断の質を高める重要な力です。',
+    mid:  '最初の印象や自分の考えに引っ張られることがあるようです。「反対意見を一つ探してみる」という習慣をつけると、視野が広がります。',
+    high: '先入観や確証バイアスが働きやすい傾向があります。「自分の意見の反証を一つ探す」という練習が効果的です。新しい情報を受け取るとき、「これは本当か?」と一度問いかける習慣をつけましょう。多様な背景を持つ人と交流することも、認知の柔軟性を高めます。'
+  },
+  blaming: {
+    low:  '自分の行動に責任を持てています。自己責任感は、信頼関係と自己効力感を育てる強みです。',
+    mid:  '外部に原因を求めることがあるようです。「自分が変えられることは何か?」を一つ考えるだけで、行動のきっかけが生まれます。',
+    high: '問題の原因を他者や環境に帰しやすい傾向があります。「自分がコントロールできること」と「できないこと」を書き出してみましょう。他者を責める気持ちの裏には、傷ついた経験や不公平感があることが多いです。その気持ちを大切にしながら、「自分にできる小さな行動」を一つ見つけることが前進につながります。'
+  },
+  selfBlaming: {
+    low:  '自分に対して適切な評価ができています。自分を責めすぎない姿勢は、精神的な健康の土台です。',
+    mid:  '自分を責めてしまうことがあるようです。「もし親友が同じ状況だったら、なんと声をかける?」と自分に問いかけてみてください。',
+    high: '何かあると自分を責めやすい傾向があります。「事実」と「解釈（自分の評価）」を分けて考える練習が効果的です。「○○が起きた（事実）」と「だから自分はダメだ（解釈）」は別のことです。親友に話すように自分に優しく語りかけること（セルフコンパッション）が助けになります。一人で抱え込まず、支援者に話を聞いてもらうことも大切です。'
+  },
+  discrimination: {
+    low:  '多様性を尊重し、先入観なく人を見ようとする姿勢があります。この視点は包括的な職場・コミュニティの構築に貢献します。',
+    mid:  '無意識に偏見が働くことがあるかもしれません。「なぜそう感じたか?」と少し立ち止まるだけで、偏見への気づきが深まります。',
+    high: '無意識の偏見（アンコンシャス・バイアス）が働きやすい傾向があります。自分のバイアスに気づくこと自体が最初の大きな一歩です。異なる背景を持つ人の話を直接聞く機会を増やしましょう。「この人はどんな経験をしてきたのだろう?」と興味を持つことが、偏見を減らす有効なアプローチです。'
+  },
+  dependency: {
+    low:  '自立した判断力を持ちながら、他者とも協力できるバランスが取れています。この自律性は自己成長の重要な基盤です。',
+    mid:  '他者の承認を求めることがあるようです。「自分はどう感じているか?」を先に確認してから他者に聞く習慣が、自立的な判断を育てます。',
+    high: '他者への依存度が高い傾向があります。小さなことから「自分で決める」練習をしましょう。「今日のランチは何にしよう?」という選択から始めてみてください。一人でいる時間を少しずつ増やし、自分の気持ちを観察することも助けになります。依存の背景には不安や孤独感があることが多く、支援者と一緒に取り組むことが有効です。'
+  },
+  resistanceToChange: {
+    low:  '変化に柔軟に対応できています。適応力は、変化の激しい環境でも安定して活動するための大切な力です。',
+    mid:  '変化への抵抗を感じることがあるようです。「変化の後、どんないいことがあるか?」を一つ考えてみると、前向きな気持ちが生まれやすくなります。',
+    high: '変化を避けたり、新しいことへの抵抗が強い傾向があります。「慣れ親しんだ方法」が安心感を与えることは自然なことです。一方で、小さな変化から試してみると「意外と大丈夫だった」という経験が積み重なります。変化のメリットを具体的に書き出すことも助けになります。サポートがある状況で少しずつ試す方法が、無理なく変化に慣れる近道です。'
+  },
+  comparison: {
+    low:  '自分のペースで物事を進められています。他者との比較に振り回されない姿勢は、自己肯定感の安定につながります。',
+    mid:  '他者と比較してしまうことがあるようです。「過去の自分と比べて、どんな成長があったか?」に目を向けると、前向きな気持ちを取り戻しやすくなります。',
+    high: '自分を他者と比べやすい傾向があります。SNSの使用時間を意識し、見た後に気分が下がるなら距離を置くことをおすすめします。「他者との比較」から「過去の自分との比較」に意識を切り替えましょう。「今日、昨日より少し良くなったことは何か?」という問いが、自分軸を育てます。あなたの価値は他者との比較では決まりません。'
+  },
+  fearOfSuccess: {
+    low:  '成功を恐れずに挑戦できています。目標に向かって前進するエネルギーは、あなたの大きな強みです。',
+    mid:  '成功した後のことを心配することがあるようです。「成功したら具体的にどんな状況になるか?」をイメージしておくと、不安が和らぐことがあります。',
+    high: '成功することへの不安や恐れが強い傾向があります。「成功したら何が怖いか?」を書き出してみましょう。多くの場合、「期待に応えられないかも」「変わってしまうかも」という恐れが見えてきます。成功の定義を自分で決め、「小さな成功」を積み重ねることが助けになります。支援者やチームと一緒に目標に取り組むと、プレッシャーが分散されます。'
+  }
+};
+
 var allRecords = [];
 var usersMap = {};
 var sortCol = 'name';
@@ -239,10 +411,8 @@ var currentUser = null;
 var radarChart = null;
 var trendChart = null;
 var avgBarChart = null;
+var rptRadarChart = null;
 
-// ================================================================
-// AUTH
-// ================================================================
 function checkPassword() {
   var v = document.getElementById('pw-input').value;
   if (v === PASSWORD) {
@@ -266,7 +436,6 @@ function logout() {
   location.reload();
 }
 
-// Auto-login check
 (function() {
   if (localStorage.getItem(AUTH_KEY) === '1') {
     document.getElementById('password-modal').style.display = 'none';
@@ -275,9 +444,6 @@ function logout() {
   }
 })();
 
-// ================================================================
-// DATA LOADING
-// ================================================================
 async function loadData() {
   var btn = document.getElementById('refresh-btn');
   var icon = document.getElementById('refresh-icon');
@@ -294,8 +460,6 @@ async function loadData() {
     if (data && data.status === 'error') throw new Error(data.message || 'GAS error');
 
     allRecords = Array.isArray(data) ? data : [];
-
-    // Build usersMap
     usersMap = {};
     for (var i = 0; i < allRecords.length; i++) {
       var r = allRecords[i];
@@ -303,7 +467,6 @@ async function loadData() {
       if (!usersMap[nm]) usersMap[nm] = [];
       usersMap[nm].push(r);
     }
-    // Sort each user's records by date ascending
     Object.keys(usersMap).forEach(function(nm) {
       usersMap[nm].sort(function(a, b) { return new Date(a.date) - new Date(b.date); });
     });
@@ -329,9 +492,6 @@ async function loadData() {
   icon.className = '';
 }
 
-// ================================================================
-// HELPERS
-// ================================================================
 function sc(rec, id) {
   var v = parseFloat(rec[id]);
   return isNaN(v) ? 0 : v;
@@ -368,9 +528,6 @@ function esc(s) {
     .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-// ================================================================
-// STATS
-// ================================================================
 function updateStats() {
   var names = Object.keys(usersMap);
   document.getElementById('stat-users').textContent = names.length;
@@ -390,9 +547,6 @@ function updateStats() {
   }
 }
 
-// ================================================================
-// TABLE
-// ================================================================
 function buildRows() {
   return Object.keys(usersMap).map(function(nm) {
     var recs = usersMap[nm];
@@ -472,9 +626,6 @@ function renderTable() {
   });
 }
 
-// ================================================================
-// DETAIL
-// ================================================================
 function showDetail(name) {
   currentUser = name;
   renderTable();
@@ -486,7 +637,6 @@ function showDetail(name) {
   document.getElementById('detail-title').textContent = '詳細 — ' + name;
   document.getElementById('detail-panel').style.display = 'block';
 
-  // History list
   var histEl = document.getElementById('detail-history');
   histEl.innerHTML = '';
   recs.slice().reverse().forEach(function(rec, i) {
@@ -512,6 +662,7 @@ function showDetail(name) {
   }
 
   renderCatScores(lat, prv);
+  updateSessionSelect(recs);
 
   setTimeout(function() {
     document.getElementById('detail-panel').scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -524,9 +675,17 @@ function closeDetail() {
   renderTable();
 }
 
-// ================================================================
-// RADAR CHART
-// ================================================================
+function updateSessionSelect(recs) {
+  var sel = document.getElementById('session-select');
+  sel.innerHTML = '';
+  recs.slice().reverse().forEach(function(rec, i) {
+    var opt = document.createElement('option');
+    opt.value = recs.length - 1 - i;
+    opt.textContent = (i === 0 ? '最新 ' : '') + fmtDate(rec.date) + '（第' + (recs.length - i) + '回）';
+    sel.appendChild(opt);
+  });
+}
+
 function renderRadar(lat, prv) {
   var ctx = document.getElementById('radar-chart').getContext('2d');
   if (radarChart) radarChart.destroy();
@@ -574,9 +733,6 @@ function renderRadar(lat, prv) {
   });
 }
 
-// ================================================================
-// TREND CHART
-// ================================================================
 function renderTrend(recs) {
   var ctx = document.getElementById('trend-chart').getContext('2d');
   if (trendChart) trendChart.destroy();
@@ -614,9 +770,6 @@ function renderTrend(recs) {
   });
 }
 
-// ================================================================
-// CATEGORY SCORE BARS
-// ================================================================
 function renderCatScores(lat, prv) {
   var el = document.getElementById('category-scores');
   el.innerHTML = '';
@@ -657,9 +810,6 @@ function renderCatScores(lat, prv) {
   });
 }
 
-// ================================================================
-// AVG BAR CHART
-// ================================================================
 function renderAvgBarChart() {
   var ctx = document.getElementById('avg-bar-chart').getContext('2d');
   if (avgBarChart) avgBarChart.destroy();
@@ -692,8 +842,8 @@ function renderAvgBarChart() {
     }).join('');
   document.getElementById('top3-section').innerHTML = top3Html;
 
-  var bgColors   = CATEGORIES.map(function(c) { return GC[c.group].bar + 'cc'; });
-  var bdColors   = CATEGORIES.map(function(c) { return GC[c.group].bar; });
+  var bgColors = CATEGORIES.map(function(c) { return GC[c.group].bar + 'cc'; });
+  var bdColors = CATEGORIES.map(function(c) { return GC[c.group].bar; });
 
   avgBarChart = new Chart(ctx, {
     type: 'bar',
@@ -720,6 +870,171 @@ function renderAvgBarChart() {
         tooltip: { callbacks: { label: function(ctx) { return ' ' + ctx.parsed.y.toFixed(2); } } }
       }
     }
+  });
+}
+
+function openReportModal() {
+  if (!currentUser || !usersMap[currentUser]) return;
+
+  var recs = usersMap[currentUser];
+  var sel = document.getElementById('session-select');
+  var idx = (sel.value !== undefined && sel.value !== '') ? parseInt(sel.value, 10) : recs.length - 1;
+  if (isNaN(idx) || idx < 0 || idx >= recs.length) idx = recs.length - 1;
+  var rec = recs[idx];
+
+  document.getElementById('rpt-meta').textContent =
+    currentUser + ' さん　受験日: ' + fmtDate(rec.date) + '　（第' + (idx + 1) + '回）';
+
+  var scores = {};
+  CATEGORIES.forEach(function(c) { scores[c.id] = sc(rec, c.id); });
+
+  renderRptSummary(scores);
+  renderRptRadar(scores);
+  renderRptCategories(scores);
+
+  var modal = document.getElementById('report-modal');
+  modal.classList.add('open');
+  modal.scrollTop = 0;
+  document.body.style.overflow = 'hidden';
+}
+
+function closeReportModal() {
+  document.getElementById('report-modal').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+function printReport() {
+  window.print();
+}
+
+document.getElementById('report-modal').addEventListener('click', function(e) {
+  if (e.target === this) closeReportModal();
+});
+
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') closeReportModal();
+});
+
+function renderRptSummary(scores) {
+  var sorted = PATTERNS.slice().sort(function(a, b) {
+    return (scores[b.id] || 0) - (scores[a.id] || 0);
+  });
+  var top3 = sorted.slice(0, 3);
+  var low3 = sorted.filter(function(p) { return (scores[p.id] || 0) <= 2; }).slice(0, 3);
+
+  var html = '<p style="margin:0 0 8px 0">スコアが特に高い傾向として、<strong>' +
+    top3.map(function(p) { return p.name; }).join('、') + '</strong>が見られます。</p>';
+
+  top3.forEach(function(p) {
+    var v = scores[p.id] || 0;
+    var level = v <= 2 ? 'low' : v <= 4 ? 'mid' : 'high';
+    var levelText = level === 'high' ? '強く見られます' : level === 'mid' ? '時々見られます' : 'あまり見られません';
+    html += '<p style="margin:0 0 4px 0">・<strong>' + p.name + '</strong>（スコア ' + v.toFixed(1) + '）: ' + levelText + '</p>';
+  });
+
+  if (low3.length > 0) {
+    html += '<p style="margin:8px 0 0 0;color:#3730a3;font-weight:600"><strong>' +
+      low3.map(function(p) { return p.name; }).join('、') + '</strong>の傾向が低いことは、大きな強みです。</p>';
+  } else {
+    html += '<p style="margin:8px 0 0 0;color:#3730a3;font-weight:600">全体的にバランスが取れています。気になるカテゴリのアドバイスを参考にしてみてください。</p>';
+  }
+
+  document.getElementById('rpt-summary').innerHTML = html;
+}
+
+function renderRptRadar(scores) {
+  var canvas = document.getElementById('rpt-radar-chart');
+  var ctx = canvas.getContext('2d');
+  if (rptRadarChart) { rptRadarChart.destroy(); rptRadarChart = null; }
+
+  var labels = PATTERNS.map(function(p) { return p.name; });
+  var data   = PATTERNS.map(function(p) { return scores[p.id] || 0; });
+
+  rptRadarChart = new Chart(ctx, {
+    type: 'radar',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: 'スコア',
+        data: data,
+        backgroundColor: 'rgba(79,70,229,.15)',
+        borderColor: 'rgba(79,70,229,.8)',
+        borderWidth: 2,
+        pointBackgroundColor: 'rgba(79,70,229,1)',
+        pointRadius: 4,
+      }]
+    },
+    options: {
+      responsive: true,
+      scales: {
+        r: {
+          suggestedMin: 0,
+          suggestedMax: 6,
+          ticks: { stepSize: 1, font: { size: 10 }, color: '#64748b' },
+          pointLabels: { font: { size: 11 }, color: '#1e293b' },
+          grid: { color: '#e2e8f0' },
+          angleLines: { color: '#cbd5e1' },
+        }
+      },
+      plugins: { legend: { display: false } }
+    }
+  });
+}
+
+function renderRptCategories(scores) {
+  var container = document.getElementById('rpt-categories');
+  container.innerHTML = '';
+
+  var groups = {};
+  PATTERNS.forEach(function(p) {
+    if (!groups[p.category]) groups[p.category] = [];
+    groups[p.category].push(p);
+  });
+
+  var groupColors = {
+    '認知の歪み系':       { text: '#dc2626', border: '#ef4444' },
+    '情動コントロール系': { text: '#ea580c', border: '#f97316' },
+    '対人関係系':         { text: '#ca8a04', border: '#eab308' },
+    '責任認知系':         { text: '#16a34a', border: '#22c55e' },
+    '社会的背景系':       { text: '#2563eb', border: '#3b82f6' },
+    '成長阻害系':         { text: '#7c3aed', border: '#9333ea' },
+  };
+
+  Object.keys(groups).forEach(function(catName) {
+    var gc = groupColors[catName] || { text: '#4f46e5', border: '#6366f1' };
+
+    var hdr = document.createElement('div');
+    hdr.style.cssText = 'font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;padding:8px 0 10px 0;margin-top:16px;color:' + gc.text + ';border-bottom:2px solid ' + gc.border + ';margin-bottom:12px';
+    hdr.textContent = catName;
+    container.appendChild(hdr);
+
+    var grid = document.createElement('div');
+    grid.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));gap:12px;margin-bottom:8px';
+
+    groups[catName].forEach(function(p) {
+      var v = scores[p.id] || 0;
+      var level = v <= 2 ? 'low' : v <= 4 ? 'mid' : 'high';
+      var levelLabel = level === 'low' ? 'あまり見られない' : level === 'mid' ? '時々見られる' : '注意が必要';
+      var barPct = Math.round((v / 6) * 100);
+      var badgeClass = 'badge-' + level + '-rpt';
+
+      var card = document.createElement('div');
+      card.className = 'rpt-cat-card';
+      card.innerHTML =
+        '<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:4px">' +
+          '<div class="rpt-cat-name" style="color:' + p.color + '">' + esc(p.name) + '</div>' +
+          '<span class="score-badge-rpt ' + badgeClass + '">' + levelLabel + '</span>' +
+        '</div>' +
+        '<div class="rpt-cat-desc">' + esc(p.description) + '</div>' +
+        '<div class="rpt-score-bar">' +
+          '<div class="rpt-score-bar-fill" style="width:' + barPct + '%;background:' + p.color + '"></div>' +
+        '</div>' +
+        '<div class="rpt-score-num">スコア: ' + v.toFixed(1) + ' / 6</div>' +
+        '<div class="advice-box advice-' + level + '">' + (ADVICE[p.id] ? ADVICE[p.id][level] : '') + '</div>';
+      grid.appendChild(card);
+    });
+
+    container.appendChild(grid);
   });
 }
 </script>
