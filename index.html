@@ -625,7 +625,7 @@ async function showResults() {
 // Google Sheets 送信
 // ===========================
 async function sendToGoogleSheets(dateISO) {
-  if (GOOGLE_SCRIPT_URL === 'https://script.google.com/macros/s/AKfycbzQBJ7Xj-Toe1wRd5z0s3LtUkh5E0MsM8FlZ9p_64xjOShwgY3VwLi53e871_wrogSB/exec') return;
+  if (!GOOGLE_SCRIPT_URL || GOOGLE_SCRIPT_URL === 'YOUR_GAS_URL_HERE') return;
   const statusEl = document.getElementById('sheets-status');
   statusEl.classList.remove('hidden');
   statusEl.innerHTML = '<div class="text-xs text-gray-400 text-center py-2">結果を記録中...</div>';
@@ -654,7 +654,7 @@ async function sendToGoogleSheets(dateISO) {
 // 過去データ取得
 // ===========================
 async function fetchPreviousData() {
-  if (GOOGLE_SCRIPT_URL === 'https://script.google.com/macros/s/AKfycbzQBJ7Xj-Toe1wRd5z0s3LtUkh5E0MsM8FlZ9p_64xjOShwgY3VwLi53e871_wrogSB/exec') return;
+  if (!GOOGLE_SCRIPT_URL || GOOGLE_SCRIPT_URL === 'YOUR_GAS_URL_HERE') return;
   try {
     const url = GOOGLE_SCRIPT_URL + '?name=' + encodeURIComponent(state.userName);
     const res = await fetch(url);
@@ -863,7 +863,7 @@ function renderCategoryResults(results, prevData) {
       card.className = 'bg-white rounded-xl shadow-sm border border-gray-100 p-4 print-card';
       card.innerHTML =
         '<div class="flex items-start justify-between mb-1">' +
-          '<h4 class="font-bold text-gray-800 text-sm flex items-center flex-wrap gap-1">' + p.name + compareBadge + '</h4>' +
+          '<h4 class="font-bold text-gray-800 text-sm flex items-center flex-wrap gap-1">' + p.name + (p.scale ? ' <span class="text-xs text-gray-400 font-normal">(' + p.scale + ')</span>' : '') + compareBadge + '</h4>' +
           '<span class="score-badge badge-' + level + ' ml-2 flex-shrink-0">' + levelLabel + '</span>' +
         '</div>' +
         '<p class="text-xs text-gray-500 mb-3">' + p.description + '</p>' +
