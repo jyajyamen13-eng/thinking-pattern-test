@@ -29,8 +29,8 @@
     .badge-red{background:rgba(239,68,68,.2);color:#fca5a5}
     .badge-blue{background:rgba(59,130,246,.2);color:#93c5fd}
     .badge-gray{background:rgba(100,116,139,.2);color:#94a3b8}
-    .trend-better{background:rgba(34,197,94,.2);color:#86efac}
-    .trend-worse{background:rgba(239,68,68,.2);color:#fca5a5}
+    .trend-down{background:rgba(34,197,94,.2);color:#86efac}
+    .trend-up{background:rgba(239,68,68,.2);color:#fca5a5}
     .trend-same{background:rgba(100,116,139,.2);color:#94a3b8}
     .score-bar-bg{flex:1;height:6px;background:#334155;border-radius:3px;overflow:hidden}
     .score-bar-fill{height:100%;border-radius:3px;transition:width .8s ease}
@@ -202,7 +202,7 @@
             </div>
             <div>
               <div style="font-size:.75rem;color:#64748b;text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px">最新スコア — レーダーチャート</div>
-              <div style="max-width:320px;margin:0 auto"><canvas id="radar-chart"></canvas></div>
+              <div style="max-width:480px;margin:0 auto"><canvas id="radar-chart"></canvas></div>
             </div>
           </div>
           <div id="trend-section" style="display:none;margin-bottom:24px">
@@ -788,9 +788,9 @@ function renderCatScores(lat, prv) {
     if (pv !== null) {
       var diff = v - pv;
       tb = diff < -0.09
-        ? '<span class="badge trend-better" style="font-size:.65rem;padding:1px 6px">&#9660; 改善</span>'
+        ? '<span class="badge trend-down" style="font-size:.65rem;padding:1px 6px">&#9660; 低下</span>'
         : diff > 0.09
-          ? '<span class="badge trend-worse" style="font-size:.65rem;padding:1px 6px">&#9650; 悪化</span>'
+          ? '<span class="badge trend-up" style="font-size:.65rem;padding:1px 6px">&#9650; 上昇</span>'
           : '<span class="badge trend-same" style="font-size:.65rem;padding:1px 6px">&#8212; 変化なし</span>';
     }
 
@@ -1052,7 +1052,7 @@ function renderRptCategories(scores, prevScores) {
         '<div class="rpt-score-bar">' +
           '<div class="rpt-score-bar-fill" style="width:' + barPct + '%;background:' + p.color + '"></div>' +
         '</div>' +
-        '<div class="rpt-score-num">' + (function() { if (prevScores) { var pv = (prevScores[p.id] || 0); var diff = v - pv; var arrow = diff < -0.09 ? '<span style="color:#16a34a">▼改善</span>' : diff > 0.09 ? '<span style="color:#ef4444">▲上昇</span>' : '<span style="color:#64748b">— 変化なし</span>'; return '前回: ' + pv.toFixed(1) + ' → 今回: ' + v.toFixed(1) + ' ' + arrow; } return 'スコア: ' + v.toFixed(1) + ' / 6'; })() + '</div>' +
+        '<div class="rpt-score-num">' + (function() { if (prevScores) { var pv = (prevScores[p.id] || 0); var diff = v - pv; var arrow = diff < -0.09 ? '<span style="color:#16a34a">▼ 低下</span>' : diff > 0.09 ? '<span style="color:#ef4444">▲ 上昇</span>' : '<span style="color:#64748b">— 変化なし</span>'; return '前回: ' + pv.toFixed(1) + ' → 今回: ' + v.toFixed(1) + ' ' + arrow; } return 'スコア: ' + v.toFixed(1) + ' / 6'; })() + '</div>' +
         '<div class="advice-box advice-' + level + '">' + (ADVICE[p.id] ? ADVICE[p.id][level] : '') + '</div>';
       grid.appendChild(card);
     });

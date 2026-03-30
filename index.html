@@ -784,11 +784,11 @@ function renderComparisonSummary(results, prevData) {
   if (improved.length > 0) {
     const sec = document.createElement('div');
     sec.className = 'mb-3';
-    sec.innerHTML = '<p class="text-sm font-semibold text-green-700 mb-1">前回より改善したカテゴリ</p>';
+    sec.innerHTML = '<p class="text-sm font-semibold text-green-700 mb-1">前回より低下したカテゴリ</p>';
     improved.forEach(item => {
       const row = document.createElement('p');
       row.className = 'text-sm text-gray-700 mb-1';
-      row.innerHTML = '<span class="compare-badge-better mr-2">改善</span>' + item.name +
+      row.innerHTML = '<span class="compare-badge-better mr-2">低下</span>' + item.name +
         ' <span class="text-green-600 font-semibold">(' + item.diff.toFixed(1) + ')</span>';
       sec.appendChild(row);
     });
@@ -854,7 +854,7 @@ function renderCategoryResults(results, prevData) {
       if (prevData) {
         const prev = parseFloat(prevData[p.name]) || 0;
         const diff = r.score - prev;
-        if (diff <= -0.3)      compareBadge = '<span class="compare-badge-better ml-1">改善 ' + diff.toFixed(1) + '</span>';
+        if (diff <= -0.3)      compareBadge = '<span class="compare-badge-better ml-1">低下 ' + diff.toFixed(1) + '</span>';
         else if (diff >= 0.3)  compareBadge = '<span class="compare-badge-worse ml-1">上昇 +' + diff.toFixed(1) + '</span>';
         else                   compareBadge = '<span class="compare-badge-same ml-1">変化なし</span>';
       }
