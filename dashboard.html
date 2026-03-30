@@ -1022,7 +1022,7 @@ function renderRptCategories(scores) {
       card.className = 'rpt-cat-card';
       card.innerHTML =
         '<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:4px">' +
-          '<div class="rpt-cat-name" style="color:' + p.color + '">' + esc(p.name) + '</div>' +
+          '<div class="rpt-cat-name" style="color:' + p.color + '">' + esc(p.name) + (p.scale ? ' <span style="font-size:0.75rem;color:#94a3b8">(' + p.scale + ')</span>' : '') + '</div>' +
           '<span class="score-badge-rpt ' + badgeClass + '">' + levelLabel + '</span>' +
         '</div>' +
         '<div class="rpt-cat-desc">' + esc(p.description) + '</div>' +
