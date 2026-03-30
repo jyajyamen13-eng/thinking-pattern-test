@@ -192,7 +192,7 @@
       <div id="detail-panel" class="card" style="margin-bottom:24px">
         <div class="card-header" style="display:flex;align-items:center;justify-content:space-between">
           <span id="detail-title">利用者詳細</span>
-          <button onclick="closeDetail()" style="background:none;border:none;color:#64748b;font-size:1.1rem;cursor:pointer;padding:0 4px">&#10005;</button>
+          <div><button onclick="closeDetail()" style="background:#334155;border:1px solid #475569;color:#e2e8f0;padding:6px 16px;border-radius:8px;cursor:pointer;font-size:0.85rem;margin-right:8px">← 一覧に戻る</button></div>
         </div>
         <div style="padding:20px">
           <div class="detail-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:24px">
@@ -308,21 +308,21 @@ var GC = {
 };
 
 var PATTERNS = [
-  { id: 'blackWhite',         name: '白黒思考',                 category: '認知の歪み系',       color: '#ef4444', description: '物事を極端な二択で捉える思考パターン' },
-  { id: 'overgeneralization', name: '過度の一般化',             category: '認知の歪み系',       color: '#f87171', description: '一つの出来事から全てを一般化して考える思考パターン' },
-  { id: 'mindReading',        name: '読心術的思考',             category: '認知の歪み系',       color: '#fca5a5', description: '他者の考えを根拠なく推測する思考パターン' },
-  { id: 'anger',              name: 'アンガー思考',             category: '情動コントロール系', color: '#f97316', description: '怒りの感情が思考を支配するパターン' },
-  { id: 'victimMentality',    name: '被害者意識思考',           category: '情動コントロール系', color: '#fb923c', description: '自分を被害者として位置づける思考パターン' },
-  { id: 'mounting',           name: 'マウンティング思考',       category: '対人関係系',         color: '#eab308', description: '自分の優位性を示そうとする思考パターン' },
-  { id: 'avoidance',          name: '回避型思考',               category: '対人関係系',         color: '#facc15', description: '問題や対立を避けようとする思考パターン' },
-  { id: 'cognitiveBias',      name: '認知バイアス思考',         category: '対人関係系',         color: '#fde047', description: '先入観や偏見に基づいて判断する思考パターン' },
-  { id: 'blaming',            name: '他責思考',                 category: '責任認知系',         color: '#16a34a', description: '問題の原因を他人や環境に求める思考パターン' },
-  { id: 'selfBlaming',        name: '自責思考',                 category: '責任認知系',         color: '#4ade80', description: '問題の原因を過度に自分に求める思考パターン' },
-  { id: 'discrimination',     name: '偏見・ステレオタイプ思考', category: '社会的背景系',       color: '#2563eb', description: '特定の属性に基づいて人を区別する思考パターン' },
-  { id: 'dependency',         name: '依存思考',                 category: '社会的背景系',       color: '#60a5fa', description: '他者や物事に過度に依存する思考パターン' },
-  { id: 'resistanceToChange', name: '変化拒否思考',             category: '成長阻害系',         color: '#9333ea', description: '変化や新しいことを避ける思考パターン' },
-  { id: 'comparison',         name: '他人比較思考',             category: '成長阻害系',         color: '#a855f7', description: '自分を常に他者と比較する思考パターン' },
-  { id: 'fearOfSuccess',      name: '成功恐怖思考',             category: '成長阻害系',         color: '#c084fc', description: '成功することへの不安や恐れを持つ思考パターン' }
+  { id: 'blackWhite', scale: 'CDS',         name: '白黒思考',                 category: '認知の歪み系',       color: '#ef4444', description: '物事を極端な二択で捉える思考パターン' },
+  { id: 'overgeneralization', scale: 'CDS', name: '過度の一般化',             category: '認知の歪み系',       color: '#f87171', description: '一つの出来事から全てを一般化して考える思考パターン' },
+  { id: 'mindReading', scale: 'CDS/FNE',        name: '読心術的思考',             category: '認知の歪み系',       color: '#fca5a5', description: '他者の考えを根拠なく推測する思考パターン' },
+  { id: 'anger', scale: 'STAXI-2',              name: 'アンガー思考',             category: '情動コントロール系', color: '#f97316', description: '怒りの感情が思考を支配するパターン' },
+  { id: 'victimMentality', scale: 'TIV',    name: '被害者意識思考',           category: '情動コントロール系', color: '#fb923c', description: '自分を被害者として位置づける思考パターン' },
+  { id: 'mounting', scale: 'NPI',           name: 'マウンティング思考',       category: '対人関係系',         color: '#eab308', description: '自分の優位性を示そうとする思考パターン' },
+  { id: 'avoidance', scale: 'AAQ-II',          name: '回避型思考',               category: '対人関係系',         color: '#facc15', description: '問題や対立を避けようとする思考パターン' },
+  { id: 'cognitiveBias', scale: 'CRT/CBQp',      name: '認知バイアス思考',         category: '対人関係系',         color: '#fde047', description: '先入観や偏見に基づいて判断する思考パターン' },
+  { id: 'blaming', scale: 'ASQ',            name: '他責思考',                 category: '責任認知系',         color: '#16a34a', description: '問題の原因を他人や環境に求める思考パターン' },
+  { id: 'selfBlaming', scale: 'ATQ-30',        name: '自責思考',                 category: '責任認知系',         color: '#4ade80', description: '問題の原因を過度に自分に求める思考パターン' },
+  { id: 'discrimination', scale: 'IAT',     name: '偏見・ステレオタイプ思考', category: '社会的背景系',       color: '#2563eb', description: '特定の属性に基づいて人を区別する思考パターン' },
+  { id: 'dependency', scale: 'IDI/YSQ',         name: '依存思考',                 category: '社会的背景系',       color: '#60a5fa', description: '他者や物事に過度に依存する思考パターン' },
+  { id: 'resistanceToChange', scale: 'IUS-12', name: '変化拒否思考',             category: '成長阻害系',         color: '#9333ea', description: '変化や新しいことを避ける思考パターン' },
+  { id: 'comparison', scale: 'INCOM',         name: '他人比較思考',             category: '成長阻害系',         color: '#a855f7', description: '自分を常に他者と比較する思考パターン' },
+  { id: 'fearOfSuccess', scale: 'FOSS',      name: '成功恐怖思考',             category: '成長阻害系',         color: '#c084fc', description: '成功することへの不安や恐れを持つ思考パターン' }
 ];
 
 var ADVICE = {
